@@ -501,6 +501,20 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     override fun onPause() {
         super.onPause()
         stopSensor()
