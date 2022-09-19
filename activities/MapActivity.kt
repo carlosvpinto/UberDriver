@@ -410,7 +410,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             if (autorizadoCondu == true){
                 saveLocationMoto()
             }
-
         }
     }
 
