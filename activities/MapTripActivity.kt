@@ -103,6 +103,12 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private var isFirstTimeOnResume = false
     private var isFirstLocation = false
 
+    //PARA EL PRECIO
+    private val driverProvider = DriverProvider()
+    private var  tipoVehiculo = ""
+    var total = 0.0
+
+
     // TEMPORIZADOR
     private var counter = 0
     private var min = 0
@@ -153,6 +159,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ))
+        SaberSiesMoto()
 
         binding.btnStartTrip.setOnClickListener { updateToStarted() }
         binding.btnFinishTrip.setOnClickListener { updateToFinish() }
@@ -425,6 +432,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     }
 
     private fun createHistory() {
+        Log.d("PRICE", "VALOR DE TOTAL $total ")
         val history = History(
             idDriver = authProvider.getId(),
             idClient = booking?.idClient,
@@ -436,7 +444,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             destinationLng = booking?.destinationLng,
             time = min,
             km = km,
-            price = totalPrice,
+            price = total,
             timestamp = Date().time
         )
         historyProvider.create(history).addOnCompleteListener {
@@ -452,78 +460,111 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             }
         }
     }
-
-    //OPTIENE EL PRECIO DE VIAJE!(YO)
+    //OPTIENE EL PRECIO DE VIAJE!(YO)**********
     private fun getPrices(distance: Double, time: Double) {
 
+
         configProvider.getPrices().addOnSuccessListener { document ->
+            Log.d("PRICE", "VALOR DE Document $document ")
             if (document.exists()) {
                 val prices = document.toObject(Prices::class.java) // DOCUMENTO CON LA INFORMACION
+                var CcortaMoto = prices?.CcortaMoto
+                var CmediaMoto = prices?.CmediaMoto
+                val CcortaCarro = prices?.CcortaCarro
+                val CmediaCarro = prices?.CMediaCarro
+                val kmCarro = prices?.kmCarro
+                val kmMoto = prices?.kmMoto
 
-//                val totalDistance = distance * prices?.km!! // VALOR POR KM
-//                Log.d("PRICES", "totalDistance: $totalDistance")
-//                val totalTime = time * prices?.min!! // VALOR POR MIN
-//                Log.d("PRICES", "totalTime: $totalTime")
-//                var total =  totalDistance + totalTime // TOTAL
-//                Log.d("PRICES", "total: $total")
-//
-//                total = if (total < 5.0) prices?.minValue!! else total
-//                Log.d("PRICES", "new total: $total")
-//
-//                var minTotal = total - prices?.difference!! // TOTAL - 2USD
-//                Log.d("PRICES", "minTotal: $minTotal")
-//
-//                var maxTotal = total + prices?.difference!! // TOTAL + 2USD
-//                Log.d("PRICES", "maxTotal: $maxTotal")
+                if (tipoVehiculo == "Carro"){
 
-                //CALCULOS PERSONALES
-                var total = 0.0
-
-                if (distance<5) {
-                    totalPrice = 1.0
-                }
-                if (distance>5 && distance<12){
-                    totalPrice = 3.0
-                }
-                if (distance>12){
-                    totalPrice = distance*0.5
+                    if (distance<5) {
+                        total = CcortaCarro!!.toDouble()
+                    }
+                    if (distance>5 && distance<12){
+                        total = CmediaCarro!!.toDouble()
+                    }
+                    if (distance>12){ // FALTA CALCULAR BIEN DESPUES DE 12KM
+                        total = distance*kmCarro!!.toDouble()
+                    }
                 }
 
+                if (tipoVehiculo == "Moto"){
+                    if (distance<5) {
+                        total = CcortaMoto!!.toDouble()
+                    }
+                    if (distance>5 && distance<12){
+                        total = CmediaMoto!!.toDouble()
+                    }
+                    if (distance>12){ // FALTA CALCULAR BIEN DESPUES DE 12KM
+                        total = distance*kmMoto!!.toDouble()
+                    }
 
-                val minTotalString = String.format("%.1f", totalPrice)
+                }
+
+                Log.d("PRICE", "VALOR DE TOTAL FUERA $total ")
+                val maxTotalString = String.format("%.1f", total)
                 //  val maxTotalString = String.format("%.1f", maxTotal)
                 createHistory()
-
-
             }
-        }
 
+        }
     }
 
-
+    //OPTIENE EL PRECIO DE VIAJE!(YO)
 //    private fun getPrices(distance: Double, time: Double) {
 //
 //        configProvider.getPrices().addOnSuccessListener { document ->
 //            if (document.exists()) {
 //                val prices = document.toObject(Prices::class.java) // DOCUMENTO CON LA INFORMACION
 //
-//                val totalDistance = distance * prices?.km!! // VALOR POR KM
-//                Log.d("PRICES", "totalDistance: $totalDistance")
-//                val totalTime = time * prices?.min!! // VALOR POR MIN
-//                Log.d("PRICES", "totalTime: $totalTime")
-//                totalPrice =  totalDistance + totalTime // TOTAL
-//                Log.d("PRICES", "total: $totalPrice")
 //
-//                totalPrice = if (totalPrice < 5.0) prices?.minValue!! else totalPrice
+//
+//
+//                //CALCULOS PERSONALES
+//                if (tipoVehiculo== "Carro"){
+//                    var total = 0.0
+//
+//                    if (distance<5) {
+//                        totalPrice = 1.0
+//                    }
+//                    if (distance>5 && distance<12){
+//                        totalPrice = 3.0
+//                    }
+//                    if (distance>12){
+//                        totalPrice = distance*0.5
+//                    }
+//                }
+//                if (tipoVehiculo == "Moto"){
+//                    var total = 0.0
+//
+//                    if (distance<5) {
+//                        totalPrice = 1.0
+//                    }
+//                    if (distance>5 && distance<12){
+//                        totalPrice = 3.0
+//                    }
+//                    if (distance>12){
+//                        totalPrice = distance*km
+//                    }
+//                }
+//
+//
+//
+//                val minTotalString = String.format("%.1f", totalPrice)
+//                //  val maxTotalString = String.format("%.1f", maxTotal)
 //                createHistory()
+//
+//
 //            }
 //        }
 //
 //    }
 
+
+
     private fun goToCalificationClient() {
         val i = Intent(this, CalificationClientActivity::class.java)
-        i.putExtra("price", totalPrice)
+        i.putExtra("price", total)
         i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(i)
     }
@@ -592,6 +633,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         }
     }
 
+    //COLOCA EL ICONO DE CIRCULO DE FLECHA////
     private fun addDirectionMarker(latLng: LatLng, angle: Int)  {
         val circleDrawable = ContextCompat.getDrawable(applicationContext, R.drawable.ic_up_arrow_circle)
         val markerIcon = getMarkerFromDrawable(circleDrawable!!)
@@ -661,6 +703,28 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     override fun onPause() {
         super.onPause()
         stopSensor()
+    }
+    //MODIFICACION MIA**********
+
+    // VERIFICA SI ES CARRO O MOTO YO************************
+    private fun SaberSiesMoto(){
+        driverProvider.getDriver(authProvider.getId()).addOnSuccessListener { document ->
+            if (document.exists()) {
+                val driver = document.toObject(Driver::class.java)
+
+
+                if (driver?.tipo.toString() == "Carro"){
+                    tipoVehiculo = "Carro"
+                    Log.d("LOCALIZACION", "ENTRO A CARRO: tipoVehiculo  $tipoVehiculo  ${driver!!.tipo}")
+                }
+                if (driver?.tipo.toString()=="Moto"){
+                    tipoVehiculo = "Moto"
+                    Log.d("LOCALIZACION", "ENTRO A MOTO: tipoVehiculo  $tipoVehiculo  ${driver?.tipo}")
+                }
+
+
+            }
+        }
     }
 
 

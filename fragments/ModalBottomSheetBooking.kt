@@ -34,12 +34,6 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     private val authProvider = AuthProvider()
     private lateinit var booking: Booking
 
-    private val historyProvider = HistoryDriverProvider()
-
-    //DESCONECTAR
-    var easyWayLocation: EasyWayLocation? = null
-    private var myLocationLatLng: LatLng? = null
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -72,41 +66,13 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     private fun cancelBooking(idClient: String) {
         bookingProvider.updateStatus(idClient, "cancel").addOnCompleteListener {
             (activity as? MapActivity)?.timer?.cancel()
-            createHistoryCancel()
             dismiss()
         }
     }
 
-    //CREA LA HISTORIA DE BOOKING CANCELADA(YO)
-    private fun createHistoryCancel() {
-        val history = HistoryDriverCancel(
-            idDriver = authProvider.getId(),
-            idClient = booking?.idClient,
-            origin = booking?.origin,
-            destination = booking?.destination,
-            originLat = booking?.originLat,
-            originLng = booking?.originLng,
-            destinationLat = booking?.destinationLat,
-            price = booking?.price,
-            destinationLng = booking?.destinationLng,
-
-            timestamp = Date().time
-        )
-        historyProvider.create(history).addOnCompleteListener {
-            if (it.isSuccessful) {
-
-              //  Toast.makeText(requireContext(), "Fue guardado el rechazo de servicio", Toast.LENGTH_SHORT).show()
-                Log.d("ESCUCHANDO", "GUARDADO EL RECHAZO $it")
-
-            }
-        }
-    }
-
-
     private fun acceptBooking(idClient: String) {
         bookingProvider.updateStatus(idClient, "accept").addOnCompleteListener {
             (activity as? MapActivity)?.timer?.cancel()
-
             if (it.isSuccessful) {
                 (activity as? MapActivity)?.easyWayLocation?.endUpdates()
                 geoProvider.removeLocation(authProvider.getId())
@@ -133,30 +99,9 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         (activity as? MapActivity)?.timer?.cancel()
-        if (booking.idClient != null) {
-            if (booking.status!="Aceptado"){
-              //  cancelBooking(booking.idClient!!)
-            }
-
-        }
+//        if (booking.idClient != null) {
+//            cancelBooking(booking.idClient!!)
+//        }
     }
-
-    //DESCONECTAR CON CANCELAR EL BOOKING
-    private fun disconnectDriver() {
-        easyWayLocation?.endUpdates()
-        if (myLocationLatLng != null) {
-            geoProvider.removeLocation(authProvider.getId())
-
-        }
-
-        // DESCONECTAR MOTO
-        if (myLocationLatLng!= null){
-            geoProvider.removeLocationMoto(authProvider.getId())
-
-        }
-    }
-
-
-
 
 }

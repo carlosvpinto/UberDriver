@@ -116,7 +116,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             Manifest.permission.ACCESS_COARSE_LOCATION
         ))
         SaberSiesMoto() // VERIFICA SI ES MOTO YO***********
-        verificaActivacion()// REALIZA ACTIVACION DE LA APLICACION YO **************
+        //verificaActivacion()// REALIZA ACTIVACION DE LA APLICACION YO **************
         listenerBooking()
         createToken()
 
@@ -183,13 +183,15 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             if (document.exists()) {
                 val driver = document.toObject(Driver::class.java)
                 autorizadoCondu = driver?.activado!!
-                Log.d("LOCALIZACION", "Private Saber si es moto: autorizadoCondu  $autorizadoCondu")
+                Log.d("LOCALIZACION", "Private Saber si es moto: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
 
                 if (driver?.tipo.toString() == "Carro"){
                     isMotoTrip = false
+                    Log.d("LOCALIZACION", "ENTRO A CARRO: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
                 }
                 if (driver?.tipo.toString()=="Moto"){
                     isMotoTrip = true
+                    Log.d("LOCALIZACION", "ENTRO A MOTO: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
                 }
 
 
@@ -211,6 +213,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         bundle.putString("booking", booking.toJson())
         modalBooking.arguments = bundle
         modalBooking.isCancelable = false // NO PUEDA OCULTAR EL MODAL BOTTTOM SHEET
+
         modalBooking.show(supportFragmentManager, ModalBottomSheetBooking.TAG)
         timer.start()
     }
@@ -282,7 +285,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 
     //DESCONECTA LA MOTO O EL CARRO YO **********************************
     private fun disconnectDriver() {
-
         easyWayLocation?.endUpdates()
         if (myLocationLatLng != null) {
             geoProvider.removeLocation(authProvider.getId())
@@ -299,7 +301,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
     private fun connectDriver() {
         easyWayLocation?.endUpdates() // OTROS HILOS DE EJECUCION
         easyWayLocation?.startLocation()
+        Log.d("LOCALIZAR", "VALOR starLocation: $easyWayLocation")
         showButtonDisconnect()
+
     }
 
     private fun showButtonConnect() {
@@ -309,7 +313,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 
     private fun showButtonDisconnect() {
         binding.btnDisconnect.visibility = View.VISIBLE // MOSTRANDO EL BOTON DE DESCONECTARSE
-        binding.btnConnect.visibility = View.GONE // OCULATNDO EL BOTON DE CONECTARSE
+        binding.btnConnect.visibility = View.GONE // OCULTANDO EL BOTON DE CONECTARSE
     }
 
     private fun addMarker() {
@@ -371,6 +375,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
     override fun currentLocation(location: Location) { // ACTUALIZACION DE LA POSICION EN TIEMPO REAL
         myLocationLatLng = LatLng(location.latitude, location.longitude) // LAT Y LONG DE LA POSICION ACTUAL
 
+
         val field = GeomagneticField(
             location.latitude.toFloat(),
             location.longitude.toFloat(),
@@ -391,31 +396,42 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 //        val bearing = Math.toDegrees(orientation[0].toDouble()).toFloat() + declination
 //        updateCamera(bearing)
 
-        googleMap?.moveCamera(CameraUpdateFactory.newCameraPosition(
-            CameraPosition.builder().target(myLocationLatLng!!).bearing(bearing).tilt(50f).zoom(19f).build()
-        ))
-        addDirectionMarker(myLocationLatLng!!, angle)
+                if (!isFirstLocation) {
+                    googleMap?.moveCamera(CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.builder().target(myLocationLatLng!!).bearing(bearing).tilt(50f).zoom(13f).build()
+                    ))
+                    addDirectionMarker(myLocationLatLng!!, angle)
+                    isFirstLocation = true
 
+                    //VERIFICA SI ES MOTO O CARRO/////
+                    SaberSiesMoto()
 
-        //VERIFICA SI ES MOTO O CARRO/////
-        SaberSiesMoto()
-        Log.d("TIPO", "VALOR TIPO: $isMotoTrip")
-        if (isMotoTrip!= true){
+                }
+        Log.d("LOCALIZAR", "VALOR TIPO: $isMotoTrip $autorizadoCondu")
+        if (isMotoTrip== true){
             if (autorizadoCondu == true){
-                saveLocation()
-            }
 
-        }
-        if (isMotoTrip!= false){
-            if (autorizadoCondu == true){
                 saveLocationMoto()
             }
+
         }
+        if (isMotoTrip== false){
+            if (autorizadoCondu == true){
+                Log.d("LOCALIZAR", "ENTRO A ACTIVAR CARRO!! $isMotoTrip $autorizadoCondu")
+                saveLocation()
+            }
+        }
+
+
+
+
+
     }
 
     override fun locationCancelled() {
 
     }
+
 
     private fun updateCamera(bearing: Float) {
         val oldPos = googleMap?.cameraPosition
@@ -501,20 +517,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
     override fun onPause() {
         super.onPause()
         stopSensor()
