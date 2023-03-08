@@ -12,6 +12,7 @@ import com.carlosvicente.uberdriverkotlin.databinding.ActivityCalificationClient
 import com.carlosvicente.uberdriverkotlin.databinding.ActivityMapTripBinding
 import com.carlosvicente.uberdriverkotlin.models.History
 import com.carlosvicente.uberdriverkotlin.providers.HistoryProvider
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 
 class CalificationClientActivity : AppCompatActivity() {
 
@@ -20,6 +21,7 @@ class CalificationClientActivity : AppCompatActivity() {
     private var extraPrice = 0.0
     private var historyProvider = HistoryProvider()
     private var calification = 0f
+    private var progressDialog = ProgressDialogFragment
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +29,7 @@ class CalificationClientActivity : AppCompatActivity() {
         binding = ActivityCalificationClientBinding.inflate(layoutInflater)
         setContentView(binding.root)
         window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-
+        progressDialog.showProgressBar(this)
         extraPrice = intent.getDoubleExtra("price", 0.0)
         binding.textViewPrice.text = "${String.format("%.1f", extraPrice)}$"
 
@@ -45,6 +47,7 @@ class CalificationClientActivity : AppCompatActivity() {
         }
 
         getHistory()
+        progressDialog.hideProgressBar(this)
     }
 
     private fun updateCalification(idDocument: String) {
@@ -65,9 +68,11 @@ class CalificationClientActivity : AppCompatActivity() {
     }
 
     private fun getHistory() {
+        Log.d("PRICE2", "ENTRO AL GETHISTORY: ${history?.toJson()}")
         historyProvider.getLastHistory().get().addOnSuccessListener { query ->
-            if (query != null) {
 
+            if (query != null) {
+                Log.d("PRICE2", "DOCUMENTO PRICE: ${history?.toJson()}")
                 if (query.documents.size > 0) {
                     history = query.documents[0].toObject(History::class.java)
                     history?.id = query.documents[0].id
@@ -75,13 +80,15 @@ class CalificationClientActivity : AppCompatActivity() {
                     binding.textViewDestination.text = history?.destination
                     binding.textViewTimeAndDistance.text = "${history?.time} Min - ${String.format("%.1f", history?.km)} Km"
 
-                    Log.d("FIRESTORE", "hISTORIAL: ${history?.toJson()}")
+                    Log.d("PRICE2", "hISTORIAL: ${history?.toJson()}")
                 }
                 else {
                     Toast.makeText(this, "No se encontro el historial", Toast.LENGTH_LONG).show()
                 }
 
             }
+
+            progressDialog.hideProgressBar(this)
         }
     }
 }

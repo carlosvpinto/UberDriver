@@ -21,8 +21,6 @@ class AuthProvider {
         return auth.currentUser?.uid ?: ""
     }
 
-
-
     fun existSession(): Boolean {
         var exist = false
         if (auth.currentUser != null) {

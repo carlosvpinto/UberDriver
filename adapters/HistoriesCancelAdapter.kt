@@ -8,12 +8,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.carlosvicente.uberdriverkotlin.R
-import com.carlosvicente.uberdriverkotlin.activities.HistoriesDetailActivity
-import com.carlosvicente.uberdriverkotlin.models.History
+import com.carlosvicente.uberdriverkotlin.activities.HistoryDetailCancelActivity
+import com.carlosvicente.uberdriverkotlin.activities.HistoriesDriverCancelActivity
+//import com.carlosvicente.uberdriverkotlin.activities.HistoriesDetailActivity
+import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 import com.carlosvicente.uberdriverkotlin.utils.RelativeTime
 
+//import com.carlosvicente.uberdriverkotlin.utils.RelativeTime
 
-class HistoriesAdapter(val context: Activity, val histories: ArrayList<History>): RecyclerView.Adapter<HistoriesAdapter.HistoriesAdapterViewHolder>() {
+class HistoriesCancelAdapter(val context: Activity, val histories: ArrayList<HistoryDriverCancel>): RecyclerView.Adapter<HistoriesCancelAdapter.HistoriesAdapterViewHolder>() {
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoriesAdapterViewHolder {
@@ -31,11 +34,11 @@ class HistoriesAdapter(val context: Activity, val histories: ArrayList<History>)
             holder.textViewDate.text = RelativeTime.getTimeAgo(history.timestamp!!, context)
         }
 
-        holder.itemView.setOnClickListener { goToDetail(history?.id!!) }
+        holder.itemView.setOnClickListener { goToDetailCancel(history?.id!!) }
     }
 
-    private fun goToDetail(idHistory: String) {
-        val i = Intent(context, HistoriesDetailActivity::class.java)
+    private fun goToDetailCancel(idHistory: String) {
+        val i = Intent(context, HistoryDetailCancelActivity::class.java)
         i.putExtra("id", idHistory)
         context.startActivity(i)
     }

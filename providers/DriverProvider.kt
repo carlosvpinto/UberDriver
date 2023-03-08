@@ -34,6 +34,18 @@ class DriverProvider {
         }
     }
 
+    //AGREGA IMAGEN DEL VEHICULO
+    fun uploadImageVehiculo(id: String, file: File): StorageTask<UploadTask.TaskSnapshot> {
+        var fromFile = Uri.fromFile(file)
+        val ref = storage.child("$id.jpg")
+        storage = ref
+        val uploadTask = ref.putFile(fromFile)
+
+        return uploadTask.addOnFailureListener {
+            Log.d("STORAGE", "ERROR: ${it.message}")
+        }
+    }
+
     fun createToken(idDriver: String) {
         FirebaseMessaging.getInstance().token.addOnCompleteListener {
             if (it.isSuccessful) {
@@ -61,6 +73,12 @@ class DriverProvider {
         return db.document(idDriver).get()
     }
 
+    fun updateDisponible(idDriver: String, disponible: Boolean): Task<Void> {
+        return db.document(idDriver).update("disponible", disponible).addOnFailureListener { exception ->
+            Log.d("FIRESTORE", "ERROR: ${exception.message}")
+        }
+    }
+
     fun update(driver: Driver): Task<Void> {
         val map: MutableMap<String, Any> = HashMap()
         map["name"] = driver?.name!!
@@ -69,9 +87,10 @@ class DriverProvider {
         map["brandCar"] = driver?.brandCar!!
         map["colorCar"] = driver?.colorCar!!
         map["plateNumber"] = driver?.plateNumber!!
-         if (driver?.image!= null) { map["image"] = driver?.image!!
-        }
-
+        map["disponible"] = driver?.disponible!!
+         if (driver?.image!= null) {
+             map["image"] = driver?.image!!
+         }
         map["tipo"] = driver?.tipo!!
         return db.document(driver?.id!!).update(map)
     }

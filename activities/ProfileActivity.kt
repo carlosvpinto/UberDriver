@@ -19,6 +19,7 @@ import com.carlosvicente.uberdriverkotlin.databinding.ActivityProfileBinding
 import com.carlosvicente.uberdriverkotlin.models.Driver
 import com.carlosvicente.uberdriverkotlin.providers.AuthProvider
 import com.carlosvicente.uberdriverkotlin.providers.DriverProvider
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import java.io.File
 import kotlin.math.log
 
@@ -33,8 +34,11 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
     var optcarro : RadioButton? = null
     var optmoto : RadioButton? = null
 
+    private var progressDialog = ProgressDialogFragment
+
 
     private var imageFile: File? = null
+    private var imageFileVehiculo: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +46,9 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
         setContentView(binding.root)
         window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
 
+        progressDialog.showProgressBar(this)
         getDriver()
+
         radioGroup = findViewById(R.id.GrupoOpt)
         optcarro = findViewById(R.id.optcarro)
         optmoto = findViewById(R.id.optmoto)
@@ -51,10 +57,14 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
         binding.btnUpdate.setOnClickListener { updateInfo() }
         binding.circleImageProfile.setOnClickListener { selectImage() }
 
+
     }
 
 
+
+
     private fun updateInfo() {
+        progressDialog.showProgressBar(this)
 
         val name = binding.textFieldName.text.toString()
         val lastname = binding.textFieldLastname.text.toString()
@@ -77,31 +87,37 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
             plateNumber = carPlate,
             tipo = Tipo.toString()
         )
-
-        if (imageFile != null) {
+    //VALIDA LA INFORMACION DE LA IMAGEN DE PERFIL
+        if (imageFile != null ) {
             driverProvider.uploadImage(authProvider.getId(), imageFile!!).addOnSuccessListener { taskSnapshot ->
                 driverProvider.getImageUrl().addOnSuccessListener { url ->
                     val imageUrl = url.toString()
+
                     driver.image = imageUrl
                     driverProvider.update(driver).addOnCompleteListener {
                         if (it.isSuccessful) {
+                            progressDialog.hideProgressBar(this)
                             Toast.makeText(this@ProfileActivity, "Datos actualizados correctamente", Toast.LENGTH_LONG).show()
                             finish()
                         }
                         else {
+                            progressDialog.hideProgressBar(this)
                             Toast.makeText(this@ProfileActivity, "No se pudo actualizar la informacion", Toast.LENGTH_LONG).show()
                         }
                     }
                     Log.d("STORAGE", "$imageUrl")
                 }
             }
+
         }
         else {
             driverProvider.update(driver).addOnCompleteListener {
                 if (it.isSuccessful) {
+                    progressDialog.hideProgressBar(this)
                     Toast.makeText(this@ProfileActivity, "Datos actualizados correctamente", Toast.LENGTH_LONG).show()
                 }
                 else {
+                    progressDialog.hideProgressBar(this)
                     Toast.makeText(this@ProfileActivity, "No se pudo actualizar la informacion", Toast.LENGTH_LONG).show()
                 }
             }
@@ -136,6 +152,7 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
                     }
                 }
             }
+            progressDialog.hideProgressBar(this)
         }
     }
 
@@ -158,6 +175,10 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
 
     }
 
+
+
+
+
     private fun selectImage() {
         ImagePicker.with(this)
             .crop()
@@ -167,6 +188,7 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
                 startImageForResult.launch(intent)
             }
     }
+
 
     override fun onCheckedChanged(group: RadioGroup?, IdRadio: Int) {
     when (IdRadio){

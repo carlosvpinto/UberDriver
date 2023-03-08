@@ -9,36 +9,36 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.carlosvicente.uberdriverkotlin.models.Booking
 import com.carlosvicente.uberdriverkotlin.models.History
+import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 
-class HistoryProvider {
+class HistoryCancelProvider {
 
-    val db = Firebase.firestore.collection("Histories")
+    val db = Firebase.firestore.collection("HistoriesCancel")
     val authProvider = AuthProvider()
 
-    fun create(history: History): Task<DocumentReference> {
+    fun create(history: HistoryDriverCancel): Task<DocumentReference> {
         return db.add(history).addOnFailureListener {
             Log.d("FIRESTORE", "ERROR: ${it.message}")
         }
     }
 
-    fun getHistoryById(id: String): Task<DocumentSnapshot> {
+    fun getHistoryByIdCancel(id: String): Task<DocumentSnapshot> {
         return db.document(id).get()
     }
-    fun getLastHistory2(): Query { // CONSULTA COMPUESTA - modificado ****yo*******
 
-        return db.whereEqualTo("idDriver", authProvider.getId()).orderBy("timestamp", Query.Direction.DESCENDING)
-
-    }
-
-    fun getLastHistory(): Query { // CONSULTA COMPUESTA - INDICE
-
+    fun getLastHistoryCancel(): Query { // CONSULTA COMPUESTA - INDICE
         return db.whereEqualTo("idDriver", authProvider.getId()).orderBy("timestamp", Query.Direction.DESCENDING).limit(1)
+
     }
 
+    fun getHistoriesCancel(): Query { // CONSULTA COMPUESTA - INDICE
+        Log.d("HISTOCANCEL", "getHistoriesCancel que trae el authProvider: ${ authProvider.getId()}")
+        return db.whereEqualTo("idDriver", authProvider.getId()).orderBy("timestamp", Query.Direction.ASCENDING)
+        Log.d("HISTOCANCEL", " RESPUESTAS DEL GetHistoryCancel:= ${getHistoriesCancel()}")
+    }
 
-
-    fun getHistories(): Query { // CONSULTA COMPUESTA - INDICE
-        return db.whereEqualTo("idDriver", authProvider.getId()).orderBy("timestamp", Query.Direction.DESCENDING)
+    fun getDriver(idDriver: String): Task<DocumentSnapshot> {
+        return db.document(idDriver).get()
     }
 
     fun getBooking(): Query {
@@ -50,6 +50,5 @@ class HistoryProvider {
             Log.d("FIRESTORE", "ERROR: ${exception.message}")
         }
     }
-
 
 }

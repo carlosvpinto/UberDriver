@@ -22,6 +22,7 @@ import com.carlosvicente.uberdriverkotlin.models.Booking
 import com.carlosvicente.uberdriverkotlin.models.Client
 import com.carlosvicente.uberdriverkotlin.models.Driver
 import com.carlosvicente.uberdriverkotlin.providers.*
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import de.hdodenhof.circleimageview.CircleImageView
 
 class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
@@ -35,6 +36,8 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
     var textViewDestination: TextView? = null
     var imageViewPhone: ImageView? = null
     var circleImageClient: CircleImageView? = null
+    var circleWhatsapp: CircleImageView? =null
+    private var progressDialog = ProgressDialogFragment
 
     val REQUEST_PHONE_CALL = 30
 
@@ -51,16 +54,26 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
         textViewDestination = view.findViewById(R.id.textViewDestination)
         imageViewPhone = view.findViewById(R.id.imageViewPhone)
         circleImageClient = view.findViewById(R.id.circleImageClient)
+        circleWhatsapp = view.findViewById(R.id.logowhatsapp)
+
+        progressDialog.showProgressBar(requireActivity())
 
 //        getDriver()
         val data = arguments?.getString("booking")
         booking = Booking.fromJson(data!!)!!
+        Log.d("CLIENTE", " VALOR DE BOOKING COMPLETO ${booking}")
 
         textViewOrigin?.text = booking.origin
         textViewDestination?.text = booking.destination
+
+        circleWhatsapp?.setOnClickListener{
+            if (client?.phone!= null){
+                whatSapp(client?.phone!!)
+            }
+        }
+
         imageViewPhone?.setOnClickListener {
             if (client?.phone != null) {
-
                 if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.CALL_PHONE), REQUEST_PHONE_CALL)
                 }
@@ -69,7 +82,6 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
             }
 
         }
-
         getClientInfo()
         return view
     }
@@ -89,6 +101,27 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
 
     }
 
+    //ENVIAR MSJ DE WHATSAPP*******YO******
+    private fun whatSapp (phone: String){
+        var phone58 = phone
+        val cantNrotlf = phone.length // devuelve 10
+        if (cantNrotlf<=11){
+            val phone58 = "058$phone"
+            val i  = Intent(Intent.ACTION_VIEW);
+            val  uri = "whatsapp://send?phone="+phone58+"&text="+client?.name +"Un conductor TAXI AHORA Va en Camino por ti:";
+            i.setData(Uri.parse(uri))
+            requireActivity().startActivity(i)
+        }else{
+
+            val i  = Intent(Intent.ACTION_VIEW);
+            val  uri = "whatsapp://send?phone="+phone58+"&text="+client?.name +"Un conductor TAXI AHORA Va en Camino por ti:";
+            i.setData(Uri.parse(uri))
+            requireActivity().startActivity(i)
+        }
+
+
+    }
+
     private fun call(phone: String) {
 
         val i = Intent(Intent.ACTION_CALL)
@@ -102,6 +135,7 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
     }
 
     private fun getClientInfo() {
+        Log.d("CLIENTE", " VALOR DE BOOKING.CLIENTE: ${booking.idClient}")
         clientProvider.getClientById(booking.idClient!!).addOnSuccessListener { document ->
             if (document.exists()) {
                 client = document.toObject(Client::class.java)
@@ -114,6 +148,7 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
                 }
 //                textViewUsername?.text = "${driver?.name} ${driver?.lastname}"
             }
+            progressDialog.hideProgressBar(requireActivity())
         }
     }
 

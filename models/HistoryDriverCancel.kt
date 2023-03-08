@@ -1,6 +1,7 @@
 package com.carlosvicente.uberdriverkotlin.models
 
 import com.beust.klaxon.*
+import java.util.*
 
 private val klaxon = Klaxon()
 
@@ -17,6 +18,9 @@ data class HistoryDriverCancel (
     val destinationLng: Double? = null,
     val price: Double? = null,
     val timestamp: Long? = null,
+    val causa: String? = null,
+    val causaConductor: String?= null,
+    val fecha: Date? = null,
 ) {
     public fun toJson() = klaxon.toJsonString(this)
 

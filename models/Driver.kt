@@ -15,7 +15,9 @@ data class Driver (
     val colorCar: String? = null,
     val brandCar: String? = null,
     val tipo: String? = null,
-    val activado:Boolean? = false
+    val activado:Boolean? = false,
+    val disponible:Boolean? = false
+
 ) {
 
 

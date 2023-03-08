@@ -1,7 +1,7 @@
 package com.carlosvicente.uberdriverkotlin.activities
 
 import android.Manifest
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
@@ -12,6 +12,8 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.media.AudioManager
+import android.media.SoundPool
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
 
@@ -20,8 +22,12 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
+import androidx.fragment.app.add
+import androidx.fragment.app.commit
 //import com.bumptech.glide.Glide
 import com.example.easywaylocation.EasyWayLocation
 import com.example.easywaylocation.Listener
@@ -36,13 +42,16 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.firebase.firestore.ListenerRegistration
 import com.carlosvicente.uberdriverkotlin.R
-import com.carlosvicente.uberdriverkotlin.databinding.ActivityMapBinding
 import com.carlosvicente.uberdriverkotlin.databinding.ActivityMapTripBinding
+import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera
+import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera.Companion.ADDRESS_BUNDLE
+import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera.Companion.NAME_BUNDLE
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetTripInfo
 //import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetTripInfo
 import com.carlosvicente.uberdriverkotlin.models.*
 import com.carlosvicente.uberdriverkotlin.providers.*
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -62,6 +71,8 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private var originLatLng: LatLng? = null
     private var destinationLatLng: LatLng? = null
     private var booking: Booking? = null
+    private var bookingInfo: Booking? = null
+    private var bookingActivo: Booking? = null
     private var client: Client? = null
     private var markerOrigin: Marker? = null
     private var bookingListener: ListenerRegistration? = null
@@ -74,8 +85,10 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private val authProvider = AuthProvider()
     private val bookingProvider = BookingProvider()
     private val historyProvider = HistoryProvider()
+    private val historyCancelProvider = HistoryCancelProvider()
     private val notificationProvider = NotificationProvider()
     private val clientProvider = ClientProvider()
+    private var progressDialog = ProgressDialogFragment
 
     private var wayPoints: ArrayList<LatLng> = ArrayList()
     private val WAY_POINT_TAG = "way_point_tag"
@@ -103,10 +116,17 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private var isFirstTimeOnResume = false
     private var isFirstLocation = false
 
+
+
     //PARA EL PRECIO
     private val driverProvider = DriverProvider()
     private var  tipoVehiculo = ""
     var total = 0.0
+
+    //AJUSTES DEPURACION
+    private var guardando =0
+
+    var seleccion = ""
 
 
     // TEMPORIZADOR
@@ -136,6 +156,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMapTripBinding.inflate(layoutInflater)
         setContentView(binding.root)
         window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
@@ -159,13 +180,26 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ))
+
         SaberSiesMoto()
 
         binding.btnStartTrip.setOnClickListener { updateToStarted() }
-        binding.btnFinishTrip.setOnClickListener { updateToFinish() }
-        binding.imageViewInfo.setOnClickListener { showModalInfo() }
-//        binding.btnConnect.setOnClickListener { connectDriver() }
-//        binding.btnDisconnect.setOnClickListener { disconnectDriver() }
+
+
+            binding.btnFinishTrip.setOnClickListener {
+            ///evitar precionarlo varia veces
+            binding.btnFinishTrip.isEnabled = false
+                // Aquí van las acciones que quieres que se realicen después de presionar el botón
+            updateToFinish() }
+            binding.btnFinishTrip.postDelayed({
+            binding.btnFinishTrip.isEnabled = true
+                }, 1000) // 1 segundo de espera
+
+            binding.imageViewInfo.setOnClickListener { showModalInfo() }
+
+            binding.floatInfo.setOnClickListener{showModalInfo()}
+
+
     }
 
     val locationPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permission ->
@@ -189,14 +223,39 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
     }
 
+
+    //  OBTIENE LA INFORMACION DEL CLIENTE
     private fun getClientInfo() {
-        clientProvider.getClientById(booking?.idClient!!).addOnSuccessListener { document ->
-            if (document.exists()) {
-                client = document.toObject(Client::class.java)
+        //TRAMPA TEMPORAL PROBLEMAS DEL BOKING VACIO*******YO*******************
+        Log.d("BOOKING", "VALOR DEL BOOKING ${bookingActivo?.idClient} bookin viejo: ${booking?.idClient}")
+        if (booking?.idClient!= bookingActivo?.idClient) {
+            if (booking?.idClient != null) {
+                clientProvider.getClientById(booking?.idClient!!).addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        client = document.toObject(Client::class.java)
+                    }
+                }
             }
+            if (bookingActivo != null) {
+                clientProvider.getClientById(bookingActivo?.idClient!!)
+                    .addOnSuccessListener { document ->
+                        if (document.exists()) {
+                            client = document.toObject(Client::class.java)
+                        }
+                    }
+            }
+        }else{
+            clientProvider.getClientById(bookingActivo?.idClient!!)
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        client = document.toObject(Client::class.java)
+                    }
+                }
+
         }
     }
 
+    // ENVIA NOTIFICACION AL CLIENTE
     private fun sendNotification(status: String) {
 
         val map = HashMap<String, String>()
@@ -215,15 +274,15 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
                 if (response.body() != null) {
 
                     if (response.body()!!.success == 1) {
-                        Toast.makeText(this@MapTripActivity, "Se envio la notificacion", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MapTripActivity, "Se envio la notificacion", Toast.LENGTH_SHORT).show()
                     }
                     else {
-                        Toast.makeText(this@MapTripActivity, "No se pudo enviar la notificacion", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MapTripActivity, "No se pudo enviar la notificacion", Toast.LENGTH_SHORT).show()
                     }
 
                 }
                 else {
-                    Toast.makeText(this@MapTripActivity, "hubo un error enviando la notificacion", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MapTripActivity, "hubo un error enviando la notificacion", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -235,19 +294,27 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     }
 
     private fun showModalInfo() {
-        if (booking != null) {
+        Log.d("FIRESTORE", "BOOKING del showModalInfo  ${bookingInfo?.toJson()}")
+        if (bookingInfo != null) {
+
             val bundle = Bundle()
-            bundle.putString("booking", booking?.toJson())
-            modalTrip.arguments = bundle
-            modalTrip.show(supportFragmentManager, ModalBottomSheetTripInfo.TAG)
+            bundle.putString("booking", bookingInfo?.toJson())
+            if (!modalTrip.isAdded){
+                modalTrip.arguments = bundle
+                modalTrip.show(supportFragmentManager, ModalBottomSheetTripInfo.TAG)
+            }
+
+
         }
         else {
+
             Toast.makeText(this, "No se pudo cargar la informacion", Toast.LENGTH_SHORT).show()
         }
     }
 
+    //INICIALIZA EL CONTADOR DEL BOOKING
     private fun startTimer() {
-        handler.postDelayed(runnable, 1000) // INICIALIZAR EL CONTADOR
+        handler.postDelayed(runnable, 4000) // INICIALIZAR EL CONTADOR
     }
 
     private fun getDistanceBetween(originLatLng: LatLng, destinationLatLng: LatLng): Float {
@@ -265,6 +332,8 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         return distance
     }
 
+
+    // OBTIENE DEL BOOKING**********************
     private fun getBooking() {
         bookingProvider.getBooking().get().addOnSuccessListener { query ->
             if (query != null) {
@@ -282,6 +351,41 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             }
         }
     }
+    // OBTIENE DEL BOOKING**********************
+    private fun getBookingInfo() {
+        bookingProvider.getBookingINFO().get().addOnSuccessListener { query ->
+            if (query != null) {
+
+                if (query.size() > 0) {
+                    bookingInfo = query.documents[0].toObject(Booking::class.java)
+                    Log.d("FIRESTORE", "BOOKING ${bookingInfo?.toJson()}")
+                }
+
+            }
+        }
+    }
+
+    //BUSCA SOLO BOOKING ACTIVO ****YO******
+    private fun getBookingActivo() {
+        bookingProvider.getBookingActivo().get().addOnSuccessListener { query ->
+            if (query != null) {
+
+                if (query.size() > 0) {
+                    bookingActivo = query.documents[0].toObject(Booking::class.java)
+                    Log.d("FIRESTORE", "BOOKING ${bookingActivo?.toJson()}")
+                    originLatLng = LatLng(bookingActivo?.originLat!!, bookingActivo?.originLng!!)
+                    destinationLatLng = LatLng(bookingActivo?.destinationLat!!, bookingActivo?.destinationLng!!)
+                    easyDrawRoute(originLatLng!!)
+                    addOriginMarker(originLatLng!!)
+                    getClientInfo()
+                }
+
+            }
+        }
+    }
+
+
+
 //DIBUJA LA RUTA
     private fun easyDrawRoute(position: LatLng) {
         wayPoints.clear()
@@ -315,8 +419,8 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         }
     }
 
-
-    private fun saveLocation() {
+//GUARDA LA POSICION EN TIEMPO REAL QUE SALE DE CURRIENT LOCATION***
+    private fun  saveLocation() {
         if (myLocationLatLng != null) {
             geoProvider.saveLocationWorking(authProvider.getId(), myLocationLatLng!!)
         }
@@ -394,10 +498,13 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     }
 
 
-
+/// CAMBIA ESTADO DEL BOOKING A STARTED ***********************
     private fun updateToStarted() {
+       // progressDialog.showProgressBar(this)
         if (isCloseToOrigin) {
-            bookingProvider.updateStatus(booking?.idClient!!, "started").addOnCompleteListener {
+
+            bookingProvider.updateStatus(bookingActivo?.idClient!!, "started").addOnCompleteListener {
+                Log.d("HISTORIA", "VALOR DE BOOKING.IDCLIENT y BOOKING.STATUS ${bookingActivo?.idClient}  ${booking?.status}  ")
                 if (it.isSuccessful) {
                     if (destinationLatLng != null) {
                         isStartedTrip = true
@@ -409,57 +516,87 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
                         startTimer()
                         sendNotification("Viaje iniciado")
                     }
+
                     showButtonFinish()
                 }
+                progressDialog.hideProgressBar(this)
             }
         }
         else {
+        //    progressDialog.hideProgressBar(this)
             Log.d("LOCATION", "DISTANCIA ES MAYOR  ")
             Toast.makeText(this, "Debes estar mas cerca a la posicion de recogida", Toast.LENGTH_LONG).show()
+       //     progressDialog.hideProgressBar(this)
         }
     }
 
     private fun updateToFinish() {
+        Log.d("INAVILITAR", "EL VALOR DE GUARDANDO $guardando ")
 
-        handler.removeCallbacks(runnable) // DETENER CONTADOR
-        isStartedTrip = false
-        easyWayLocation?.endUpdates()
-        geoProvider.removeLocationWorking(authProvider.getId())
-        if (min == 0) {
-            min = 1
-        }
-        getPrices(km, min.toDouble())
+           // binding.btnFinishTrip.isEnabled = true   // INABILITA EL BOTON FINISH
+
+            handler.removeCallbacks(runnable) // DETENER CONTADOR
+            isStartedTrip = false
+            easyWayLocation?.endUpdates()
+            geoProvider.removeLocationWorking(authProvider.getId())
+            if (min == 0) {
+                min = 1
+            }
+            getPrices(km, min.toDouble())
+            // cambiaEstado()
+
+
+
     }
 
     private fun createHistory() {
-        Log.d("PRICE", "VALOR DE TOTAL $total ")
+        Log.d("HISTORIA", "HISTORIA booking viejo ${booking} BOOKING ACTIVO: ${bookingActivo} ")
         val history = History(
             idDriver = authProvider.getId(),
-            idClient = booking?.idClient,
-            origin = booking?.origin,
-            destination = booking?.destination,
-            originLat = booking?.originLat,
-            originLng = booking?.originLng,
-            destinationLat = booking?.destinationLat,
-            destinationLng = booking?.destinationLng,
+            idClient = bookingActivo?.idClient,
+            origin = bookingActivo?.origin,
+            destination = bookingActivo?.destination,
+            originLat = bookingActivo?.originLat,
+            originLng = bookingActivo?.originLng,
+            destinationLat = bookingActivo?.destinationLat,
+            destinationLng = bookingActivo?.destinationLng,
             time = min,
             km = km,
             price = total,
-            timestamp = Date().time
+            timestamp = Date().time,
+            date = bookingActivo?.date
+            
         )
         historyProvider.create(history).addOnCompleteListener {
             if (it.isSuccessful) {
+                guardando = 0
+               // binding.btnFinishTrip.isEnabled = false//HABILITA EL BOTON DESPUES DE GUARDAR
+               // Toast.makeText(this, "Historia creada Satistactorimente", Toast.LENGTH_LONG).show()
 
-                bookingProvider.updateStatus(booking?.idClient!!, "finished").addOnCompleteListener {
-                    if (it.isSuccessful) {
-                        sendNotification("Viaje terminado")
-                        goToCalificationClient()
-                    }
-                }
 
             }
         }
+
     }
+
+
+    private fun cambiaEstado(){
+
+        bookingProvider.updateStatus(bookingActivo?.idClient!!, "finished").addOnCompleteListener {
+            if (it.isSuccessful) {
+                guardando = 0
+                sendNotification("Viaje terminado")
+                goToCalificationClient()// LLAMA AL ACTIVITY CALIFICACIONES
+            }
+        }
+        bookingProvider.updateActivo (bookingActivo?.idClient!!, false).addOnCompleteListener {
+            if (it.isSuccessful) {
+                Log.d("PRICE", "CAMBIO EL ESTADO DE ACTIVO A FALSE")
+            }
+        }
+
+    }
+
     //OPTIENE EL PRECIO DE VIAJE!(YO)**********
     private fun getPrices(distance: Double, time: Double) {
 
@@ -502,63 +639,16 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
                 }
 
                 Log.d("PRICE", "VALOR DE TOTAL FUERA $total ")
-                val maxTotalString = String.format("%.1f", total)
+                val totalDosDeci = String.format("%.1f", total)
                 //  val maxTotalString = String.format("%.1f", maxTotal)
                 createHistory()
+                cambiaEstado()
             }
 
         }
     }
 
-    //OPTIENE EL PRECIO DE VIAJE!(YO)
-//    private fun getPrices(distance: Double, time: Double) {
-//
-//        configProvider.getPrices().addOnSuccessListener { document ->
-//            if (document.exists()) {
-//                val prices = document.toObject(Prices::class.java) // DOCUMENTO CON LA INFORMACION
-//
-//
-//
-//
-//                //CALCULOS PERSONALES
-//                if (tipoVehiculo== "Carro"){
-//                    var total = 0.0
-//
-//                    if (distance<5) {
-//                        totalPrice = 1.0
-//                    }
-//                    if (distance>5 && distance<12){
-//                        totalPrice = 3.0
-//                    }
-//                    if (distance>12){
-//                        totalPrice = distance*0.5
-//                    }
-//                }
-//                if (tipoVehiculo == "Moto"){
-//                    var total = 0.0
-//
-//                    if (distance<5) {
-//                        totalPrice = 1.0
-//                    }
-//                    if (distance>5 && distance<12){
-//                        totalPrice = 3.0
-//                    }
-//                    if (distance>12){
-//                        totalPrice = distance*km
-//                    }
-//                }
-//
-//
-//
-//                val minTotalString = String.format("%.1f", totalPrice)
-//                //  val maxTotalString = String.format("%.1f", maxTotal)
-//                createHistory()
-//
-//
-//            }
-//        }
-//
-//    }
+
 
 
 
@@ -600,7 +690,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
         if (booking != null && originLatLng != null) {
             var distance = getDistanceBetween(myLocationLatLng!!, originLatLng!!)
-            if (distance <= 10300) { //PARA DETERMINAR A CUANTOS ,METROS DEBE D ESTAR DEL CLIENTE
+            if (distance <= 1030) { //PARA DETERMINAR A CUANTOS ,METROS DEBE D ESTAR DEL CLIENTE
                 isCloseToOrigin = true
             }
             Log.d("LOCATION", "Distance: ${distance}")
@@ -609,6 +699,8 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         if (!isLocationEnabled) {
             isLocationEnabled = true
             getBooking()
+            getBookingActivo()
+            getBookingInfo()
         }
 
     }
@@ -726,6 +818,116 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             }
         }
     }
+    //CREA HISTORIA DE BOOKING CANCELADOS!!!!**************************
+    private fun createHistoryCancel() {
+
+        Log.d("PRICE", "VALOR DE TOTAL  ")
+        val historyCancel = HistoryDriverCancel(
+            idDriver = authProvider.getId(),
+            idClient = booking?.idClient,
+            origin = booking?.origin,
+            destination = booking?.destination,
+            originLat = booking?.originLat,
+            originLng = booking?.originLng,
+            destinationLat = booking?.destinationLat,
+            destinationLng = booking?.destinationLng,
+            timestamp = Date().time,
+            fecha = Date(),
+            causa = "Cancelado por Conductor Despues de Iniciar Viaje",
+            causaConductor = seleccion
+
+
+        )
+        historyCancelProvider.create(historyCancel).addOnCompleteListener {
+            if (it.isSuccessful) {
+
+                Log.d("HISTOCANCEL", "LA HISTORIA DE CANCEL $historyCancel ")
+
+            }
+        }
+    }
+
+    fun cancelBooking(idClient: String) {
+        bookingProvider.updateStatus(idClient, "cancel").addOnCompleteListener {
+            val fragmentManager = supportFragmentManager
+            val modalBottomSheet = ModalBottomSheetBooking()
+            val fragmentTransaction = fragmentManager.beginTransaction()
+
+            createHistoryCancel()//CREA HISTORIA DE BOOKING CANCELADOS*******************
+
+        }
+    }
+
+    //MENSAGE DE CONFIRMACION DE SALIDA*********************
+    fun salirdelViaje(){
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Salir")
+        builder.setMessage("Desea salir y cancelar la Carrera?")
+        builder.setPositiveButton("Salir", DialogInterface.OnClickListener { dialog, which ->
+           // cancelardespuesInicio()
+            cancelBooking(client?.id.toString())
+
+            goToMap()
+        })
+        builder.setNegativeButton("Cancelar",null )
+        builder.show()
+
+    }
+
+    private fun goToMap() {
+        val i = Intent(this, MapActivity::class.java)
+        i.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(i)
+    }
+//    private fun cancelardespuesInicio(){
+//
+//        val bundle = bundleOf(NAME_BUNDLE to "Aristidef",
+//            ADDRESS_BUNDLE to "Direccion Mi casa")
+//            supportFragmentManager.commit {
+//            setReorderingAllowed(true)
+//            add<ModalBottomCancelCarrera>(R.id.fragmenCancelVIniciado , args = bundle)
+//        }
+//    }
+
+
+    override fun onBackPressed() {
+        porqueCancelo()
+        // Aquí puedes colocar el código para manejar la acción del botón "Atrás"
+        // Por ejemplo, puedes finalizar la actividad actual:
+      //  salirdelViaje()
+    }
+
+    private fun porqueCancelo() {
+        val opciones = arrayOf("No consigui el Pasajero", "Fue un Viaje de Prueba", "No se Pudo contactar al pasajero y preferi No ir","otro")
+        val singleChoiceDialogo = AlertDialog.Builder(this)
+            .setTitle("Cancelar Carrera")
+
+            .setSingleChoiceItems(opciones, 0) { dialog, which ->
+
+                // Aquí puedes hacer lo que necesites con la opción seleccionada
+                // Por ejemplo, mostrarla en un Toast:
+                Toast.makeText(this, "Seleccionaste la opción ${opciones[which]}", Toast.LENGTH_SHORT).show()
+                seleccion = opciones[which]
+            }
+            .setPositiveButton("Aceptar"){_,_ ->
+                Toast.makeText(this, "Seleccionaste aceptar $seleccion", Toast.LENGTH_LONG).show()
+
+                cancelBooking(client?.id.toString())
+
+                goToMap()
+            }
+            .setNegativeButton("Cancelar"){_,_ ->
+                return@setNegativeButton
+                Toast.makeText(this, "Seleccionaste Cancelar", Toast.LENGTH_SHORT).show()
+            }
+            .create()
+
+            singleChoiceDialogo.show()
+        }
+
+
+
 
 
 }
