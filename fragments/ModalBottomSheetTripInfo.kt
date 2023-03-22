@@ -1,7 +1,8 @@
-package com.carlosvicente.uberkotlin.fragments
+package com.carlosvicente.uberdriverkotlin.fragments
 
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,26 +14,30 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.core.app.ActivityCompat
 import com.bumptech.glide.Glide
-import com.carlosvicente.uberkotlin.R
-import com.carlosvicente.uberkotlin.activities.*
-import com.carlosvicente.uberkotlin.models.Booking
-import com.carlosvicente.uberkotlin.models.Driver
-import com.carlosvicente.uberkotlin.providers.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.firebase.firestore.ktx.toObject
+import com.carlosvicente.uberdriverkotlin.R
+import com.carlosvicente.uberdriverkotlin.activities.*
+import com.carlosvicente.uberdriverkotlin.models.Booking
+import com.carlosvicente.uberdriverkotlin.models.Client
+import com.carlosvicente.uberdriverkotlin.models.Driver
+import com.carlosvicente.uberdriverkotlin.providers.*
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import de.hdodenhof.circleimageview.CircleImageView
 
 class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
 
-    private var driver: Driver? = null
+    private var client: Client? = null
     private lateinit var booking: Booking
-    val driverProvider = DriverProvider()
+    val clientProvider = ClientProvider()
     val authProvider = AuthProvider()
     var textViewClientName: TextView? = null
     var textViewOrigin: TextView? = null
     var textViewDestination: TextView? = null
     var imageViewPhone: ImageView? = null
     var circleImageClient: CircleImageView? = null
-    var circleImageWhatsaap: CircleImageView? = null
+    var circleWhatsapp: CircleImageView? =null
+    private var progressDialog = ProgressDialogFragment
 
     val REQUEST_PHONE_CALL = 30
 
@@ -40,7 +45,7 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?,
+        savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.modal_bottom_sheet_trip_info, container, false)
 
@@ -49,91 +54,74 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
         textViewDestination = view.findViewById(R.id.textViewDestination)
         imageViewPhone = view.findViewById(R.id.imageViewPhone)
         circleImageClient = view.findViewById(R.id.circleImageClient)
-        circleImageWhatsaap = view.findViewById(R.id.logowhatsapp)
+        circleWhatsapp = view.findViewById(R.id.logowhatsapp)
+
+        progressDialog.showProgressBar(requireActivity())
 
 //        getDriver()
         val data = arguments?.getString("booking")
         booking = Booking.fromJson(data!!)!!
+        Log.d("CLIENTE", " VALOR DE BOOKING COMPLETO ${booking}")
 
         textViewOrigin?.text = booking.origin
         textViewDestination?.text = booking.destination
-        circleImageWhatsaap?.setOnClickListener{
-            if (driver?.phone!= null){
-                whatSapp(driver?.phone!!)
+
+        circleWhatsapp?.setOnClickListener{
+            if (client?.phone!= null){
+                whatSapp(client?.phone!!)
             }
         }
-        imageViewPhone?.setOnClickListener {
-            if (driver?.phone != null) {
 
+        imageViewPhone?.setOnClickListener {
+            if (client?.phone != null) {
                 if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.CALL_PHONE), REQUEST_PHONE_CALL)
                 }
 
-                call(driver?.phone!!)
+                call(client?.phone!!)
             }
 
         }
-
-        getDriverInfo()
+        getClientInfo()
         return view
     }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray,
+        grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == REQUEST_PHONE_CALL) {
-            if (driver?.phone != null) {
-                call(driver?.phone!!)
+            if (client?.phone != null) {
+                call(client?.phone!!)
             }
         }
 
     }
-
 
     //ENVIAR MSJ DE WHATSAPP*******YO******
     private fun whatSapp (phone: String){
         var phone58 = phone
         val cantNrotlf = phone.length // devuelve 10
         if (cantNrotlf<=11){
-            try {
-                // Código que puede producir una excepción
-                val phone58 = "058$phone"
-                val i  = Intent(Intent.ACTION_VIEW);
-                val  uri = "whatsapp://send?phone="+phone58+"&text="+ driver?.name +" hola estoy esperando por ti en:";
-                i.setData(Uri.parse(uri))
-                requireActivity().startActivity(i)
-            } catch (e: Exception) {
-                // Código para manejar la excepción
-                Toast.makeText(requireContext(), "No se pudo iniciar Whatsaap $e", Toast.LENGTH_SHORT).show()
-                Log.d("whatsapp", "whatSapp: error: $e")
-            }
-
-
+            val phone58 = "058$phone"
+            val i  = Intent(Intent.ACTION_VIEW);
+            val  uri = "whatsapp://send?phone="+phone58+"&text="+client?.name +" Un conductor TAXI AHORA Va en Camino por ti:";
+            i.setData(Uri.parse(uri))
+            requireActivity().startActivity(i)
         }else{
-            try {
-                // Código que puede producir una excepción
-                val i  = Intent(Intent.ACTION_VIEW);
-                val  uri = "whatsapp://send?phone="+phone+"&text="+"hola estoy esperando por ti en:";
-                i.setData(Uri.parse(uri))
-                requireActivity().startActivity(i)
-            } catch (e: Exception) {
-                // Código para manejar la excepción
-                Toast.makeText(requireContext(), "No se pudo iniciar Whatsaap $e", Toast.LENGTH_SHORT).show()
-                Log.d("whatsapp", "whatSapp: error: $e")
-            }
 
-
+            val i  = Intent(Intent.ACTION_VIEW);
+            val  uri = "whatsapp://send?phone="+phone58+"&text="+client?.name +" Un conductor TAXI AHORA Va en Camino por ti:";
+            i.setData(Uri.parse(uri))
+            requireActivity().startActivity(i)
         }
 
 
     }
 
-
-    //LLAMAR POR TELEFONO
     private fun call(phone: String) {
 
         val i = Intent(Intent.ACTION_CALL)
@@ -146,22 +134,21 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
         requireActivity().startActivity(i)
     }
 
-    private fun getDriverInfo() {
-        driverProvider.getDriver(booking.idDriver!!).addOnSuccessListener { document ->
+    private fun getClientInfo() {
+        Log.d("CLIENTE", " VALOR DE BOOKING.CLIENTE: ${booking.idClient}")
+        clientProvider.getClientById(booking.idClient!!).addOnSuccessListener { document ->
             if (document.exists()) {
-                driver = document.toObject(Driver::class.java)
-                textViewClientName?.text = "${driver?.name} ${driver?.lastname}"
+                client = document.toObject(Client::class.java)
+                textViewClientName?.text = "${client?.name} ${client?.lastname}"
 
-                if (driver?.image != null) {
-                    if (driver?.image != "") {
-                        Glide.with(requireActivity()).load(driver?.image).into(circleImageClient!!)
+                if (client?.image != null) {
+                    if (client?.image != "") {
+                        Glide.with(requireActivity()).load(client?.image).into(circleImageClient!!)
                     }
-
-                  //  if (driver?.imageVehiculo!= null){
-                  //      Glide.with(requireActivity()).load(driver?.imageVehiculo).into(circleImageVehiculo!!)
-                  //  }
                 }
+//                textViewUsername?.text = "${driver?.name} ${driver?.lastname}"
             }
+            progressDialog.hideProgressBar(requireActivity())
         }
     }
 

@@ -1,36 +1,44 @@
-package com.carlosvicente.uberkotlin.activities
+package com.carlosvicente.uberdriverkotlin.activities
 
 import android.app.Activity
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.bumptech.glide.Glide
-import com.carlosvicente.uberkotlin.R
+import com.carlosvicente.uberdriverkotlin.R
+//import com.bumptech.glide.Glide
 import com.github.dhaval2404.imagepicker.ImagePicker
 import com.google.protobuf.Empty
-import com.carlosvicente.uberkotlin.databinding.ActivityProfileBinding
-import com.carlosvicente.uberkotlin.models.Client
-import com.carlosvicente.uberkotlin.models.Driver
-import com.carlosvicente.uberkotlin.providers.AuthProvider
-import com.carlosvicente.uberkotlin.providers.ClientProvider
+import com.carlosvicente.uberdriverkotlin.databinding.ActivityProfileBinding
+import com.carlosvicente.uberdriverkotlin.models.Driver
+import com.carlosvicente.uberdriverkotlin.providers.AuthProvider
+import com.carlosvicente.uberdriverkotlin.providers.DriverProvider
 import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import java.io.File
+import kotlin.math.log
 
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
 
     private lateinit var binding: ActivityProfileBinding
-    val clientProvider = ClientProvider()
+    val driverProvider = DriverProvider()
     val authProvider = AuthProvider()
-
-    private var imageFile: File? = null
+    var RadioGrup :RadioGroup? = null
+    var Tipo: String? = "Carro"
+    var radioGroup: RadioGroup? = null
+    var optcarro : RadioButton? = null
+    var optmoto : RadioButton? = null
 
     private var progressDialog = ProgressDialogFragment
+
+
+    private var imageFile: File? = null
+    private var imageFileVehiculo: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,37 +47,58 @@ class ProfileActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
 
         progressDialog.showProgressBar(this)
-        getClient()
+        getDriver()
+
+        radioGroup = findViewById(R.id.GrupoOpt)
+        optcarro = findViewById(R.id.optcarro)
+        optmoto = findViewById(R.id.optmoto)
+        radioGroup?.setOnCheckedChangeListener(this)
         binding.imageViewBack.setOnClickListener { finish() }
         binding.btnUpdate.setOnClickListener { updateInfo() }
         binding.circleImageProfile.setOnClickListener { selectImage() }
+
+
     }
+
+
 
 
     private fun updateInfo() {
         progressDialog.showProgressBar(this)
+
         val name = binding.textFieldName.text.toString()
         val lastname = binding.textFieldLastname.text.toString()
         val phone = binding.textFieldPhone.text.toString()
+        val carBrand = binding.textFieldCarBrand.text.toString()
+        val carColor = binding.textFieldCarColor.text.toString()
+        val carPlate = binding.textFieldCarPlate.text.toString()
+        
 
 
-        val client = Client(
+
+
+        val driver = Driver(
             id = authProvider.getId(),
             name = name,
             lastname = lastname,
             phone = phone,
+            colorCar = carColor,
+            brandCar = carBrand,
+            plateNumber = carPlate,
+            tipo = Tipo.toString()
         )
-
-        if (imageFile != null) {
-            clientProvider.uploadImage(authProvider.getId(), imageFile!!).addOnSuccessListener { taskSnapshot ->
-                clientProvider.getImageUrl().addOnSuccessListener { url ->
+    //VALIDA LA INFORMACION DE LA IMAGEN DE PERFIL
+        if (imageFile != null ) {
+            driverProvider.uploadImage(authProvider.getId(), imageFile!!).addOnSuccessListener { taskSnapshot ->
+                driverProvider.getImageUrl().addOnSuccessListener { url ->
                     val imageUrl = url.toString()
-                    client.image = imageUrl
 
-                    clientProvider.update(client).addOnCompleteListener {
+                    driver.image = imageUrl
+                    driverProvider.update(driver).addOnCompleteListener {
                         if (it.isSuccessful) {
                             progressDialog.hideProgressBar(this)
                             Toast.makeText(this@ProfileActivity, "Datos actualizados correctamente", Toast.LENGTH_LONG).show()
+                            finish()
                         }
                         else {
                             progressDialog.hideProgressBar(this)
@@ -79,9 +108,10 @@ class ProfileActivity : AppCompatActivity() {
                     Log.d("STORAGE", "$imageUrl")
                 }
             }
+
         }
         else {
-            clientProvider.update(client).addOnCompleteListener {
+            driverProvider.update(driver).addOnCompleteListener {
                 if (it.isSuccessful) {
                     progressDialog.hideProgressBar(this)
                     Toast.makeText(this@ProfileActivity, "Datos actualizados correctamente", Toast.LENGTH_LONG).show()
@@ -96,18 +126,29 @@ class ProfileActivity : AppCompatActivity() {
 
     }
 
-    private fun getClient() {
-        clientProvider.getClientById(authProvider.getId()).addOnSuccessListener { document ->
+    private fun getDriver() {
+        driverProvider.getDriver(authProvider.getId()).addOnSuccessListener { document ->
             if (document.exists()) {
-                val client = document.toObject(Client::class.java)
-                binding.textViewEmail.text = client?.email
-                binding.textFieldName.setText(client?.name)
-                binding.textFieldLastname.setText(client?.lastname)
-                binding.textFieldPhone.setText(client?.phone)
+                val driver = document.toObject(Driver::class.java)
+                binding.textViewEmail.text = driver?.email
+                binding.textFieldName.setText(driver?.name)
+                binding.textFieldLastname.setText(driver?.lastname)
+                binding.textFieldPhone.setText(driver?.phone)
+                binding.textFieldCarBrand.setText(driver?.brandCar)
+                binding.textFieldCarColor.setText(driver?.colorCar)
+                binding.textFieldCarPlate.setText(driver?.plateNumber)
+                if (driver?.tipo.toString() != "Carro"){
+                    optmoto?.isChecked = true
+                    Log.d("RADIO","MOTO")
+                }
+                if (driver?.tipo.toString()!="Moto"){
+                    Log.d("RADIO","CARRO")
+                    optcarro?.isChecked = true
+                }
 
-                if (client?.image != null) {
-                    if (client.image != "") {
-                        Glide.with(this).load(client.image).into(binding.circleImageProfile)
+                if (driver?.image != null) {
+                    if (driver.image != "") {
+                        Glide.with(this).load(driver.image).into(binding.circleImageProfile)
                     }
                 }
             }
@@ -134,6 +175,10 @@ class ProfileActivity : AppCompatActivity() {
 
     }
 
+
+
+
+
     private fun selectImage() {
         ImagePicker.with(this)
             .crop()
@@ -144,4 +189,15 @@ class ProfileActivity : AppCompatActivity() {
             }
     }
 
+
+    override fun onCheckedChanged(group: RadioGroup?, IdRadio: Int) {
+    when (IdRadio){
+        optmoto?.id-> Tipo = "Moto"
+        optcarro?.id-> Tipo = "Carro"
+    }
+
+    }
+
 }
+
+

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.media.MediaPlayer
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
@@ -12,77 +13,58 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContentProviderCompat.requireContext
 import com.carlosvicente.uberdriverkotlin.R
 import com.carlosvicente.uberdriverkotlin.activities.MapActivity
 import com.carlosvicente.uberdriverkotlin.fragments.FragmenRecibir
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking
+import com.carlosvicente.uberdriverkotlin.models.Booking
+import com.carlosvicente.uberdriverkotlin.providers.BookingProvider
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
-class servicios : Service() {
-    private var mediaPlayer: MediaPlayer? = null
-    private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: View
-    private val CHANNEL_ID = "com.carlosvicente.uberdriverkotlin"
-    private val modalRecibir = FragmenRecibir()
+class service : Service() {
 
+    private lateinit var bookingProvider: BookingProvider
+    private var bookingListener: ListenerRegistration? = null
+    var banderaActiva: Boolean = false
+    var bookingbandera: Booking? = null
+    var bookingReserva: Booking? = null
+    private val handler = Handler()
+    private var runnable: Runnable? = null
 
-    override fun onCreate() {
-        super.onCreate()
-
-
-        // Infla tu vista de superposición aquí
-        Log.d("SUPERP", "DENTRO DE ONCREATE SUPERPOSICION")
-        val i = Intent(this, MapActivity::class.java)
-        i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        this?.startActivity(i) 
-        overlayView = LayoutInflater.from(this).inflate(R.layout.activity_map, null)
-
-        // Configura el tamaño y la posición de la vista de superposición
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FIRST_APPLICATION_WINDOW,
-            PixelFormat.TRANSLUCENT
-        )
-        params.gravity = Gravity.NO_GRAVITY
-
-        // Obtiene el WindowManager y agrega la vista de superposición
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.addView(overlayView, params)
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
     }
 
+
+
+
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        runnable = object : Runnable {
+            override fun run() {
+                val miIntent = Intent(applicationContext, MapActivity::class.java)
+                miIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                miIntent.action = "MI_ACCION"
+                applicationContext.startActivity(miIntent)
 
-        //*****************
-
-            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("TAXI AHORA")
-                .setContentText("Solicitud de viaje Activa")
-                .setSmallIcon(R.drawable.ic_little_person)
-                .build()
-            startForeground(1, notification)
-            // Haz algo aquí
-
-
-        //**********************
-        mediaPlayer = MediaPlayer.create(this, R.raw.samsungtono)
-        mediaPlayer?.start()
-
+                handler.postDelayed(this, 1000) // Llama a esta función cada 5 segundos
+            }
+        }
+        handler.post(runnable as Runnable)
         return START_STICKY
     }
 
 
     override fun onDestroy() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
         super.onDestroy()
-        // Remueve la vista de superposición cuando se destruye el servicio
-       // windowManager.removeView(overlayView)
+        // Detener el listener de snapshot
+        bookingListener?.remove()
     }
-
-    override fun onBind(intent: Intent): IBinder? {
-        return null
-    }
-
 }
-

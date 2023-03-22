@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.models
+package com.carlosvicente.uberdriverkotlin.models
 
 import com.beust.klaxon.*
 import java.util.*

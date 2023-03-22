@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.models
+package com.carlosvicente.uberdriverkotlin.models
 
 import com.beust.klaxon.*
 
@@ -10,8 +10,8 @@ data class Client (
     val lastname: String? = null,
     val email: String? = null,
     val phone: String? = null,
-    var image: String? = null,
-    var token: String? = null,
+    val image: String? = null,
+    var token:String? = null,
 ) {
 
 

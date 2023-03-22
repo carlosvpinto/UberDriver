@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.models
+package com.carlosvicente.uberdriverkotlin.models
 
 class FCMBody(
     val to: String,
