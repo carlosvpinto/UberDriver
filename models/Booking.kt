@@ -1,6 +1,8 @@
-package com.carlosvicente.uberdriverkotlin.models
+package com.carlosvicente.uberkotlin.models
+
 
 import com.beust.klaxon.*
+import java.time.Instant
 import java.util.*
 
 private val klaxon = Klaxon()
@@ -20,7 +22,8 @@ data class Booking (
     val destinationLat: Double? = null,
     val destinationLng: Double? = null,
     val price: Double? = null,
-    val date: Date?=null,
+    val date: Date? = null,
+
 ) {
     public fun toJson() = klaxon.toJsonString(this)
 
@@ -28,4 +31,3 @@ data class Booking (
         public fun fromJson(json: String) = klaxon.parse<Booking>(json)
     }
 }
-

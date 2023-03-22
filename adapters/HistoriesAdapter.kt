@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.adapters
+package com.carlosvicente.uberkotlin.adapters
 
 import android.app.Activity
 import android.content.Intent
@@ -7,11 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.carlosvicente.uberdriverkotlin.R
-import com.carlosvicente.uberdriverkotlin.activities.HistoriesDetailActivity
-import com.carlosvicente.uberdriverkotlin.models.History
-import com.carlosvicente.uberdriverkotlin.utils.RelativeTime
-
+import com.carlosvicente.uberkotlin.R
+import com.carlosvicente.uberkotlin.activities.HistoriesDetailActivity
+import com.carlosvicente.uberkotlin.models.History
+import com.carlosvicente.uberkotlin.utils.RelativeTime
 
 class HistoriesAdapter(val context: Activity, val histories: ArrayList<History>): RecyclerView.Adapter<HistoriesAdapter.HistoriesAdapterViewHolder>() {
 

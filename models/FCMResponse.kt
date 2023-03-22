@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.models
+package com.carlosvicente.uberkotlin.models
 
 class FCMResponse (
     val success: Int? = null,

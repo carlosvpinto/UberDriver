@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.utils
+package com.carlosvicente.uberkotlin.utils
 
 import android.app.Application
 import android.content.Context

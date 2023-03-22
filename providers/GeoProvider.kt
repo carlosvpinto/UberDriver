@@ -1,49 +1,50 @@
-package com.carlosvicente.uberdriverkotlin.providers
+package com.carlosvicente.uberkotlin.providers
 
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import org.imperiumlabs.geofirestore.GeoFirestore
+import org.imperiumlabs.geofirestore.GeoQuery
 
 class GeoProvider {
 
     val collection = FirebaseFirestore.getInstance().collection("Locations")
-    val collectionMoto = FirebaseFirestore.getInstance().collection("LocationsMoto")
     val collectionWorking = FirebaseFirestore.getInstance().collection("LocationsWorking")
-    val geoFirestore = GeoFirestore(collection)
-    val geoFirestoreWorking = GeoFirestore(collectionWorking)
+    //PARA MOTOS
+    val collectionMoto = FirebaseFirestore.getInstance().collection("LocationsMoto")
     val geoFirestoreMoto = GeoFirestore(collectionMoto)
+    val geoFirestoreCarro = GeoFirestore(collection)
+    val geoFirestoreWorking = GeoFirestore(collectionWorking)
 
 
-    // GUARDA POSICION DEL CARRO
     fun saveLocation(idDriver: String, position: LatLng) {
-        geoFirestore.setLocation(idDriver, GeoPoint(position.latitude, position.longitude))
+        geoFirestoreCarro.setLocation(idDriver, GeoPoint(position.latitude, position.longitude))
     }
 
-    //GUARDANDO POSICION DE MOTO
-    fun saveLocationMoto(idDriver: String, position: LatLng){
-           geoFirestoreMoto.setLocation(idDriver, GeoPoint(position.latitude,position.longitude))
+    fun getNearbyDrivers(position: LatLng, radius: Double): GeoQuery {
+        val query = geoFirestoreCarro.queryAtLocation(GeoPoint(position.latitude, position.longitude), radius)
+        query.removeAllListeners()
+        return query
     }
-
-    fun removeLocationMoto(idDriver: String){
-        collectionMoto.document(idDriver).delete()
-    }
-
-
-    fun saveLocationWorking(idDriver: String, position: LatLng) {
-        geoFirestoreWorking.setLocation(idDriver, GeoPoint(position.latitude, position.longitude))
+        //BUSCAR MARCADORES DE MOTO
+    fun getNearbyDriversMoto(position: LatLng, radius: Double): GeoQuery {
+        val query = geoFirestoreMoto.queryAtLocation(GeoPoint(position.latitude, position.longitude), radius)
+        query.removeAllListeners()
+        return query
     }
 
     fun removeLocation(idDriver: String) {
         //geoFirestore.removeLocation(idDriver)
         collection.document(idDriver).delete()
     }
-    fun removeLocationWorking(idDriver: String) {
+
+    fun removeLocationMoto(idDriver: String) {
         //geoFirestore.removeLocation(idDriver)
-        collectionWorking.document(idDriver).delete()
+        collectionMoto.document(idDriver).delete()
     }
 
     fun getLocation(idDriver: String): Task<DocumentSnapshot> {
@@ -51,12 +52,13 @@ class GeoProvider {
             Log.d("FIREBASE", "ERROR: ${exception.toString()}")
         }
     }
-    fun getLocatioMoto(idDriver: String): Task<DocumentSnapshot> {
-        return collectionMoto.document(idDriver).get().addOnFailureListener { exception ->
+    fun getLocationWorking(idDriver: String): DocumentReference {
+        return collectionWorking.document(idDriver)
+    }
+    fun getLocatioPrioridad(idDriver: String): Task<DocumentSnapshot> {
+        return collection.document(idDriver).get().addOnFailureListener { exception ->
             Log.d("FIREBASE", "ERROR: ${exception.toString()}")
         }
     }
-
-
 
 }

@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.models
+package com.carlosvicente.uberkotlin.models
 
 import com.beust.klaxon.*
 
@@ -6,18 +6,17 @@ private val klaxon = Klaxon()
 
 data class Driver (
     val id: String? = null,
-    val name: String? = null,
-    val lastname: String? = null,
-    val email: String? = null,
-    val phone: String? = null,
-    var image: String? = null,
-    val plateNumber: String? = null,
-    val colorCar: String? = null,
-    val brandCar: String? = null,
-    val tipo: String? = null,
-    val activado:Boolean? = false,
-    val disponible:Boolean? = false
-
+    val name: String ? = null,
+    val lastname: String ? = null,
+    val email: String ? = null,
+    val phone: String ? = null,
+    var image: String ? = null,
+    val plateNumber: String ? = null,
+    val colorCar: String ? = null,
+    val brandCar: String ? = null,
+    val token: String ? = null,
+    var tipo: String? = null,
+    var imageVehiculo: String? = null
 ) {
 
 
