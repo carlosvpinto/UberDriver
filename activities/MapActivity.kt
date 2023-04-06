@@ -196,6 +196,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         binding.btnDisconnect.setOnClickListener { disconnectDriver() }
         binding.imageViewMenu.setOnClickListener { showModalMenu() }
         binding.imageViewSalir.setOnClickListener{salirdelApp()}
+        binding.switch1.setOnClickListener{startSensor()}
 
 
 
@@ -756,9 +757,21 @@ fun musicaMediaPlayerStop(){
 
     }
 
+    //FUNCION PARA ACTUALIZAR EL SENSOR SI EL SWITCHE ESTA PASADO********
     private fun startSensor() {
-        if (sensorManager != null) {
-            sensorManager?.registerListener(this, vectSensor, SensorManager.SENSOR_STATUS_ACCURACY_HIGH)
+        if (binding.switch1.isChecked){
+
+            // lógica cuando el Switch está encendido
+            if (sensorManager != null) {
+                sensorManager?.registerListener(this, vectSensor, SensorManager.SENSOR_STATUS_ACCURACY_LOW)
+            }
+           // Toast.makeText(this, "Sensor de Movimiento Activado", Toast.LENGTH_SHORT).show()
+            Log.d("Switch", "Encendido")
+        } else {
+            // lógica cuando el Switch está apagado
+            //Toast.makeText(this, "Sensor de Movimiento Desactivado", Toast.LENGTH_SHORT).show()
+            Log.d("Switch", "Apagado")
+            stopSensor()
         }
     }
 

@@ -64,6 +64,8 @@ import kotlin.collections.HashMap
 
 class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, DirectionUtil.DirectionCallBack, SensorEventListener {
 
+    var zoom = 0f
+    var distanAlPasajero: Location? = null
     private var bearing: Float = 0.0f
     private var totalPrice = 0.0
     private val configProvider = ConfigProvider()
@@ -99,6 +101,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
     // DISTANCIA
     private var meters = 0.0
+    private var metersAlPasajero = 0.0
     private var km = 0.0
     private var currentLocation = Location("")
     private var previusLocation = Location("")
@@ -201,7 +204,10 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
             binding.floatInfo.setOnClickListener{
                 binding.floatInfo.isClickable = false
+                binding.imageViewInfo.isClickable = false
                 showModalInfo()}
+
+        binding.switch1.setOnClickListener{startSensor()}
 
 
     }
@@ -305,6 +311,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             val bundle = Bundle()
             bundle.putString("booking", bookingInfo?.toJson())
             binding.floatInfo.isClickable= true
+            binding.imageViewInfo.isClickable = true
             if (!modalTrip.isAdded){
 
                 modalTrip.arguments = bundle
@@ -353,6 +360,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
                     easyDrawRoute(originLatLng!!)
                     addOriginMarker(originLatLng!!)
                     getClientInfo()
+
                 }
 
             }
@@ -689,6 +697,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 //            ))
 //        }
 
+        Log.d("DISTANCIA", "currentLocation: $metersAlPasajero y zomm $zoom")
         googleMap?.moveCamera(CameraUpdateFactory.newCameraPosition(
             CameraPosition.builder().target(myLocationLatLng!!).bearing(bearing).tilt(50f).zoom(14f).build()//ZOM DE LA CAMARA
         ))
@@ -710,6 +719,21 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             getBookingInfo()
         }
 
+    }
+    private fun asiganarlocation(){
+
+        originLatLng.toString()
+// Supongamos que tenemos una variable latlong que contiene la latitud y longitud:
+        val latlong = originLatLng.toString()
+
+// Separamos la latitud y longitud en dos variables distintas:
+        val (lat, long) = latlong.split(",").map { it.toDouble() }
+
+// Creamos una instancia de la clase Location y le asignamos los valores de latitud y longitud:
+        distanAlPasajero= Location("").apply {
+            setLatitude(lat)
+            setLongitude(long)
+        }
     }
 
     override fun locationCancelled() {
@@ -779,19 +803,23 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
     }
 
+    //FUNCION PARA ACTUALIZAR EL SENSOR SI EL SWITCHE ESTA PASADO********
     private fun startSensor() {
-       if (binding.switch1.isChecked==true){
+       if (binding.switch1.isChecked){
 
                 // lógica cuando el Switch está encendido
                 if (sensorManager != null) {
                     sensorManager?.registerListener(this, vectSensor, SensorManager.SENSOR_STATUS_ACCURACY_LOW)
                 }
-                Log.d("Switch", "Encendido")
-            } else {
-                // lógica cuando el Switch está apagado
-                Log.d("Switch", "Apagado")
-            }
-        }
+                   // Toast.makeText(this, "Sensor de Movimiento Activado", Toast.LENGTH_SHORT).show()
+                     Log.d("Switch", "Encendido")
+                } else {
+                    // lógica cuando el Switch está apagado
+              // Toast.makeText(this, "Sensor de Movimiento Desactivado", Toast.LENGTH_SHORT).show()
+                    stopSensor()
+                    Log.d("Switch", "Apagado")
+                }
+    }
 
 
 
