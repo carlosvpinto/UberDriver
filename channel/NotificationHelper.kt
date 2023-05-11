@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.channel
+package com.carlosvicente.uberdriverkotlin.channel
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,12 +10,12 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
-import com.carlosvicente.uberkotlin.R
+import com.carlosvicente.uberdriverkotlin.R
 
 class NotificationHelper(base: Context): ContextWrapper(base) {
 
-    private val CHANNEL_ID = "com.carlosvicente.uberkotlin"
-    private val CHANNEL_NAME = "Taxi Cliente"
+    private val CHANNEL_ID = "com.carlosvicente.uberdriverkotlin"
+    private val CHANNEL_NAME = "TaxiYa Conductor"
     private var manager: NotificationManager? = null
 
     init {
@@ -53,6 +53,18 @@ class NotificationHelper(base: Context): ContextWrapper(base) {
             .setAutoCancel(true)
             .setColor(Color.GRAY)
             .setSmallIcon(R.mipmap.ic_launcher)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body).setBigContentTitle(title))
+    }
+
+    fun getNotificationActions(title: String, body: String, acceptAction: NotificationCompat.Action, cancelAction: NotificationCompat.Action): NotificationCompat.Builder {
+        return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setColor(Color.GRAY)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .addAction(acceptAction)
+            .addAction(cancelAction)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body).setBigContentTitle(title))
     }
 

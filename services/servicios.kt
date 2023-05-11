@@ -1,8 +1,11 @@
 package com.carlosvicente.uberdriverkotlin.services
 
+import android.Manifest
+import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -14,8 +17,11 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.core.content.ContextCompat
 import com.carlosvicente.uberdriverkotlin.R
 import com.carlosvicente.uberdriverkotlin.activities.MapActivity
 import com.carlosvicente.uberdriverkotlin.activities.MapTripActivity
@@ -36,9 +42,12 @@ class service : Service() {
     private val bookingProvider = BookingProvider()
     var bookingbandera: Booking? = null
     var bookingReserva: Booking? = null
-    var banderaActiva: Boolean = false
+    var banderaActivaServi: Boolean = false
     private var mediaPlayer: MediaPlayer? = null
+    var sonidoAlarma = 0
     var contador= 0.0
+
+    var booking:Booking? = null
     private val modalBooking = ModalBottomSheetBooking()
     val timer = object: CountDownTimer(60000, 1000) {
         override fun onTick(counter: Long) {
@@ -66,78 +75,82 @@ class service : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Llama a la función listenerBooking()
-        listenerBooking()
-        // Indica que el servicio debe seguir ejecutándose en segundo plano
+
+        // Comprobar si la actividad de mapa está en primer plano
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appTask = activityManager.appTasks.firstOrNull()
+        appTask?.moveToFront()
+        val runningTaskInfo = activityManager.getRunningTasks(1)[0]
+        val currentActivity = runningTaskInfo.topActivity
+        if (sonidoAlarma<1){
+            musicaMediaPlayer()
+        }
+        //*******************
+        if (currentActivity != null && currentActivity.packageName == packageName && currentActivity.className == MapActivity::class.java.name) {
+            // Si la actividad de mapa ya está en primer plano, no hacer nada
+            Log.d("ESCUCHANDO", "La actividad de mapa ya está en primer plano")
+        } else {
+            // Si la actividad de mapa no está en primer plano, abrirla
+            Log.d("ESCUCHANDO", "Abriendo la actividad de mapa")
+            val intent = Intent(this, MapActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        }
+        //******************
+
+
+
+
+
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.REORDER_TASKS) == PackageManager.PERMISSION_GRANTED) {
+            // Si el permiso está concedido, mueve la tarea de tu aplicación a primer plano
+            Log.d("ESCUCHANDO", "PERMISO CONCEDIDO")
+            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val appTask = activityManager.appTasks.firstOrNull()
+            appTask?.moveToFront()
+        } else {
+            // Si el permiso no está concedido, solicítalo al usuario
+           // ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.REORDER_TASKS), PERMISSIONS_REQUEST_REORDER_TASKS)
+            Log.d("ESCUCHANDO", "PERMISO NO CONCEDIDO")
+        }
+
         return START_STICKY
     }
 
-    private fun listenerBooking() {
-        // Aquí iría todo el código de la función listenerBooking()
-        bookingListener = bookingProvider.getBooking().addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.d("FIRESTORE", "ERROR: ${e.message}")
-                return@addSnapshotListener
-            }
-            Log.d("ESCUCHANDO", "ERROR: ${snapshot?.documents?.size}")
-            if (snapshot != null) {
-                var CantBook = 0
-                CantBook = snapshot.documents.size
-                var Contador = 0
-                if (snapshot.documents.size > 0) {
-                    while (Contador < CantBook){
+    //PARA REPRODUCIR EL TONO
+    //LLAMA AL TONO EN SEGUNDO PLANO ***
+    fun musicaMediaPlayer(){
 
-                        val booking = snapshot.documents[Contador].toObject(Booking::class.java)
-                        Contador++
-                        if (booking?.status == "create"){
-                            bookingbandera = booking
-                            bookingReserva = booking
-
-                            //verica si esta activa la actividad
-                            musicaMediaPlayer()
-                                showModalBooking(booking!!)
-
-                        }
-
-                    }
-
-                }
-            }
-
-        }
-    }
-    //LLAMA EL FRAGMENT**********************************************************************
-    private fun showModalBooking(booking: Booking) {
-
-        if (banderaActiva!= true) {
-            val bundle = Bundle()
-            bundle.putString("booking", booking.toJson())
-            modalBooking.arguments = bundle
-            modalBooking.isCancelable = false // NO PUEDA OCULTAR EL MODAL BOTTTOM SHEET
-
-            goToMapTrip()
-
-            //timer.start()
-        } else {
-            // La actividad no está activa
-        }
-
-    }
-
-   private fun musicaMediaPlayer(){
-
-        timer.start()
+        //
         mediaPlayer = MediaPlayer.create(this, R.raw.samsungtono)
         mediaPlayer?.start()
-//            val serviceIntent = Intent(this, servicios::class.java)
-//        startActivity(serviceIntent)
+        // Llama a la actividad que deseas mostrar
+        val intent = Intent(this, MapActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+
+        // Mueve la tarea a primer plano
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appTask = activityManager.appTasks.firstOrNull()
+        appTask?.moveToFront()
 
     }
+
+
     //LLAMA AL ACTIVITID DE NAVEGACION goToMapTrip ***YO******
     private fun goToMapTrip() {
-        val i = Intent(this, MapTripActivity::class.java)
+
+        val i = Intent(this, MapActivity::class.java)
+
+        i.putExtra("booking",  booking?.toJson())
         i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(i)
+    }
+
+    override fun onDestroy() {
+        mediaPlayer?.stop()
+        super.onDestroy()
     }
 }
 

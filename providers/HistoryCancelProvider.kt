@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.providers
+package com.carlosvicente.uberdriverkotlin.providers
 
 import android.util.Log
 import com.google.android.gms.tasks.Task
@@ -7,9 +7,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.carlosvicente.uberkotlin.models.Booking
-import com.carlosvicente.uberkotlin.models.History
-import com.carlosvicente.uberkotlin.models.HistoryDriverCancel
+import com.carlosvicente.uberdriverkotlin.models.Booking
+import com.carlosvicente.uberdriverkotlin.models.History
+import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 
 class HistoryCancelProvider {
 

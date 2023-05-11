@@ -1,32 +1,29 @@
-package com.carlosvicente.uberkotlin.activities
+package com.carlosvicente.uberdriverkotlin.activities
 
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.carlosvicente.uberkotlin.R
-import com.carlosvicente.uberkotlin.adapters.HistoriesAdapter
-//import com.carlosvicente.uberkotlin.databinding.ActivityHistoriesBinding
-import com.carlosvicente.uberkotlin.databinding.ActivityHistoryBinding
-import com.carlosvicente.uberkotlin.models.History
-import com.carlosvicente.uberkotlin.providers.HistoryProvider
+import com.carlosvicente.uberdriverkotlin.R
+import com.carlosvicente.uberdriverkotlin.adapters.HistoriesAdapter
+import com.carlosvicente.uberdriverkotlin.databinding.ActivityHistoriesBinding
+import com.carlosvicente.uberdriverkotlin.models.History
+import com.carlosvicente.uberdriverkotlin.providers.HistoryProvider
 import com.tommasoberlose.progressdialog.ProgressDialogFragment
 
 class HistoriesActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityHistoryBinding
+    private lateinit var binding: ActivityHistoriesBinding
     private var historyProvider = HistoryProvider()
     private var histories = ArrayList<History>()
     private lateinit var adapter: HistoriesAdapter
-
     private var progressDialog = ProgressDialogFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityHistoryBinding.inflate(layoutInflater)
+        binding = ActivityHistoriesBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         progressDialog.showProgressBar(this)
         val linearLayoutManager = LinearLayoutManager(this)
         binding.recyclerViewHistories.layoutManager = linearLayoutManager
@@ -41,13 +38,17 @@ class HistoriesActivity : AppCompatActivity() {
             setSupportActionBar(binding.toolbar)
         }
 
-        supportActionBar?.title = "Historial de viajes"
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+
+        supportActionBar?.title = "Historial de viajes Realizadas"
+        //supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setTitleTextColor(Color.BLACK)
 
         getHistories()
+
     }
 
+    //OBTIENE LAS HISTORIAS
     private fun getHistories() {
         histories.clear()
 
@@ -67,7 +68,8 @@ class HistoriesActivity : AppCompatActivity() {
                     binding.recyclerViewHistories.adapter = adapter
                 }
             }
-        progressDialog.hideProgressBar(this)
+            progressDialog.hideProgressBar(this)
+
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.models
+package com.carlosvicente.uberdriverkotlin.models
 
 import com.beust.klaxon.*
 import java.util.*
@@ -22,6 +22,6 @@ data class ReciboConductor (
     public fun toJson() = klaxon.toJsonString(this)
 
     companion object {
-        public fun fromJson(json: String) = klaxon.parse<PagoMovil>(json)
+        public fun fromJson(json: String) = klaxon.parse<ReciboConductor>(json)
     }
 }

@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.api
+package com.carlosvicente.uberdriverkotlin.api
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

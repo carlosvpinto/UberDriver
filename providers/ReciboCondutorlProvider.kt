@@ -1,15 +1,15 @@
-package com.carlosvicente.uberkotlin.providers
+package com.carlosvicente.uberdriverkotlin.providers
 
 import android.util.Log
+import com.carlosvicente.uberdriverkotlin.models.ReciboConductor
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.carlosvicente.uberkotlin.models.Booking
-import com.carlosvicente.uberkotlin.models.History
-import com.carlosvicente.uberkotlin.models.PagoMovil
-import com.carlosvicente.uberkotlin.models.ReciboConductor
+import com.carlosvicente.uberdriverkotlin.models.Booking
+import com.carlosvicente.uberdriverkotlin.models.History
+
 import com.google.firebase.firestore.DocumentSnapshot
 
 class ReciboCondutorlProvider {
@@ -27,12 +27,15 @@ class ReciboCondutorlProvider {
         return db.whereEqualTo("idClient", authProvider.getId()).orderBy("timestamp", Query.Direction.DESCENDING).limit(1)
     }
 
-    fun getPagoMovil(idClient:String): Query { // CONSULTA COMPUESTA - INDICE
+    fun getReciboConductor(): Query { // CONSULTA COMPUESTA - INDICE
         return db.whereEqualTo("idClient", authProvider.getId()).orderBy("timestamp", Query.Direction.DESCENDING)
     }
 
     fun getHistoryById(id: String): Task<DocumentSnapshot> {
         return db.document(id).get()
+    }
+    fun getReciboConductor(idDriver:String): Query { // CONSULTA COMPUESTA - INDICE
+        return db.whereEqualTo("idDriver", idDriver).orderBy("timestamp", Query.Direction.DESCENDING)
     }
 
 

@@ -1,4 +1,4 @@
-package com.carlosvicente.uberkotlin.activities
+package com.carlosvicente.uberdriverkotlin.activities
 
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -7,7 +7,8 @@ import android.os.Handler
 import android.view.WindowManager
 import android.widget.ImageView
 import com.bumptech.glide.Glide
-import com.carlosvicente.uberkotlin.R
+import com.carlosvicente.uberdriverkotlin.R
+
 
 class SplashActivity : AppCompatActivity() {
 

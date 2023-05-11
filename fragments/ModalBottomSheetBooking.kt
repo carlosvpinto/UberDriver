@@ -1,11 +1,10 @@
 package com.carlosvicente.uberdriverkotlin.fragments
 
 
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
-import android.media.AudioManager
-import android.media.SoundPool
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
@@ -26,11 +25,9 @@ import com.carlosvicente.uberdriverkotlin.models.Driver
 import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 import com.carlosvicente.uberdriverkotlin.providers.*
 import com.ekn.gruzer.gaugelibrary.Range
-import com.example.easywaylocation.EasyWayLocation
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.tommasoberlose.progressdialog.ProgressDialogFragment
 import kotlinx.android.synthetic.main.modal_bottom_sheet_booking.*
-
 import java.util.*
 
 class ModalBottomSheetBooking: BottomSheetDialogFragment() {
@@ -42,6 +39,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     private lateinit var btnAccept: Button
     private lateinit var btnCancel: Button
     private lateinit var txtTiempo: TextView
+    private var progressDialog = ProgressDialogFragment
 
 
 
@@ -67,7 +65,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         val view = inflater.inflate(R.layout.modal_bottom_sheet_booking, container, false)
         //PARA INICIAR EL RELOJ EN EL TIEMPO CORRECTO******************************
@@ -102,7 +100,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
         btnAccept.setOnClickListener { acceptBooking(booking?.idClient!!) }
         btnCancel.setOnClickListener { cancelBooking(booking?.idClient!!) }
        // relojllamar.setOnClickListener{configurarGaude()}
-        getDriverInfo(booking?.idClient!!)
+        getClientInfo(booking?.idClient!!)
        // configurarGaude()
         return view
     }
@@ -145,6 +143,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
 
     }
 
+
     // TEMPORORIZADOR DE ESPERA DE RESPUESTA DEL CONDUCTOR********************YO*********
     private fun activartiempo(inicio:Long){
         Log.d("tiempo", "Tiempo fuera del onTick: ${inicio} ")
@@ -167,10 +166,12 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     //configurar la barra de tiempo Gaude ***yo ******************
 
 
-    //OBTIENE LA INFORMACION DEL CONDUCTOR
-    private fun getDriverInfo(idClient: String) {
+    //OBTIENE LA INFORMACION DEL CLIENTE
+    private fun getClientInfo(idClient: String) {
 
+        progressDialog.showProgressBar(requireActivity())
         clienteProvider.getClientById(idClient).addOnSuccessListener { document ->
+            progressDialog.hideProgressBar(requireActivity())
             if (document.exists()) {
                 cliente = document.toObject(Client::class.java)
                 Log.d("CONDUCTOR", "CONDUCTOR ENCONTRADO EN getDriverInfo: ${Driver} y:  ${cliente?.name}")
@@ -228,6 +229,12 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
             }
         }
     }
+
+    private fun apagarMusica() {
+        // Iniciar el servicio
+
+    }
+
     //CREA HISTORIA DE BOOKING CANCELADOS!!!!**************************
     private fun createHistoryCancel() {
         Log.d("PRICE", "VALOR DE TOTAL  ")
