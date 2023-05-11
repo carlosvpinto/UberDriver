@@ -1,9 +1,9 @@
-package com.carlosvicente.uberdriverkotlin.providers
+package com.carlosvicente.uberkotlin.providers
 
-import com.carlosvicente.uberdriverkotlin.api.IFCMApi
-import com.carlosvicente.uberdriverkotlin.api.RetrofitClient
-import com.carlosvicente.uberdriverkotlin.models.FCMBody
-import com.carlosvicente.uberdriverkotlin.models.FCMResponse
+import com.carlosvicente.uberkotlin.api.IFCMApi
+import com.carlosvicente.uberkotlin.api.RetrofitClient
+import com.carlosvicente.uberkotlin.models.FCMBody
+import com.carlosvicente.uberkotlin.models.FCMResponse
 import retrofit2.Call
 
 class NotificationProvider {

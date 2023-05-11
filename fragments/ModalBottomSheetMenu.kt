@@ -1,55 +1,43 @@
-package com.carlosvicente.uberdriverkotlin.fragments
+package com.carlosvicente.uberkotlin.fragments
 
 
-import android.content.DialogInterface
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.firebase.firestore.ktx.toObject
-import com.carlosvicente.uberdriverkotlin.R
-import com.carlosvicente.uberdriverkotlin.activities.*
-import com.carlosvicente.uberdriverkotlin.models.Booking
-import com.carlosvicente.uberdriverkotlin.models.Driver
-import com.carlosvicente.uberdriverkotlin.providers.AuthProvider
-import com.carlosvicente.uberdriverkotlin.providers.BookingProvider
-import com.carlosvicente.uberdriverkotlin.providers.DriverProvider
-import com.carlosvicente.uberdriverkotlin.providers.GeoProvider
-import com.example.easywaylocation.EasyWayLocation
-import com.google.android.gms.maps.model.LatLng
+import com.carlosvicente.uberkotlin.R
+import com.carlosvicente.uberkotlin.activities.*
+import com.carlosvicente.uberkotlin.models.Client
+import com.carlosvicente.uberkotlin.providers.*
+import com.google.android.gms.tasks.Tasks.call
 
 class ModalBottomSheetMenu: BottomSheetDialogFragment() {
-    private var myLocationLatLng: LatLng? = null
-    val driverProvider = DriverProvider()
+
+    val clientProvider = ClientProvider()
     val authProvider = AuthProvider()
-    var easyWayLocation: EasyWayLocation? = null
+
     var textViewUsername: TextView? = null
     var linearLayoutLogout: LinearLayout? = null
     var linearLayoutProfile: LinearLayout? = null
     var linearLayoutHistory: LinearLayout? = null
-    var linearLayoutHistoryCancel: LinearLayout? = null
-    var linearlayautGanaciaTotal:LinearLayout?=null
-
-    // PROVANDO PARA SALIR DE LA LOCALIXACION
-    val geoProvider = GeoProvider()
-
-    //Verifica si es moto
-    private var isMotoTrip = true
+    var linearLayoutLlamar: LinearLayout? = null
+    var linearLayoutBank: LinearLayout?=null
+    val REQUEST_PHONE_CALL = 30
 
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-
     ): View? {
         val view = inflater.inflate(R.layout.modal_bottom_sheet_menu, container, false)
 
@@ -57,23 +45,53 @@ class ModalBottomSheetMenu: BottomSheetDialogFragment() {
         linearLayoutLogout = view.findViewById(R.id.linearLayoutLogout)
         linearLayoutProfile = view.findViewById(R.id.linearLayoutProfile)
         linearLayoutHistory = view.findViewById(R.id.linearLayoutHistory)
-        linearLayoutHistoryCancel = view.findViewById(R.id.linearLayoutHistoryCancel)
-        linearlayautGanaciaTotal = view.findViewById(R.id.linearLayoutResumeGana)
+        linearLayoutLlamar = view.findViewById(R.id.linearLayoutLlamar)
+        linearLayoutBank = view.findViewById(R.id.linearLayoutBank)
 
-
-        getDriver()
+        getClient()
 
         linearLayoutLogout?.setOnClickListener { goToMain() }
+        linearLayoutBank?.setOnClickListener { goToBank() }
         linearLayoutProfile?.setOnClickListener { goToProfile() }
         linearLayoutHistory?.setOnClickListener { goToHistories() }
-        linearLayoutHistoryCancel?.setOnClickListener { goToHistoriesCancel()}
-        linearlayautGanaciaTotal?.setOnClickListener{gotoGanancia()}
+        linearLayoutLlamar?.setOnClickListener {
+
+            val driverTlf = "0584124603451"
+                whatSapp(driverTlf)
+
+
+
+        }
         return view
     }
 
-    private fun gotoGanancia() {
-        val i = Intent(activity, GananciasActivity::class.java)
+    private fun goToBank() {
+        val i = Intent(activity, BancoprincipalActivity::class.java)
         startActivity(i)
+    }
+
+    //ENVIAR MSJ DE WHATSAPP*******YO******
+    private fun whatSapp (phone: String){
+        var phone58 = phone
+        val cantNrotlf = phone.length // devuelve 10
+
+            try {
+                // código que puede generar una excepción
+                val phone58 = "058$phone"
+                val i  = Intent(Intent.ACTION_VIEW);
+                val  uri =  "whatsapp://send?phone="+phone+"&text="+"hola te escribo de la aplicacion TAXI AHORA:";
+                i.setData(Uri.parse(uri))
+                requireActivity().startActivity(i)
+            } catch (e: Exception) {
+                // código para manejar la excepción
+                Toast.makeText(requireContext(), "Error al iniciar Whatsaap $e", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+
+
+
+
     }
 
     private fun goToProfile() {
@@ -86,64 +104,18 @@ class ModalBottomSheetMenu: BottomSheetDialogFragment() {
         startActivity(i)
     }
 
-    //HISTORIAS CANCELADAS (YO)*************************************
-    private fun goToHistoriesCancel() {
-        val i = Intent(activity, HistoriesDriverCancelActivity::class.java)
-        startActivity(i)
-    }
-
     private fun goToMain() {
-
-        salirEliminando()
-        easyWayLocation?.endUpdates()
-
-
         authProvider.logout()
-
         val i = Intent(activity, MainActivity::class.java)
         i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(i)
     }
 
-    //PARA ELIMINAR AL CONDUCTOR DE LA LOCALIZACION
-    private fun salirEliminando(){
-
-        //ELIMINA LA DISPONIBILIDAD DEL CONDUCTOR*****YO****
-        if ( authProvider.getId()!= null) {
-            if (authProvider.getId()!= ""){
-                geoProvider.removeLocation(authProvider.getId())
-            }
-        }
-        // DESCONECTAR MOTO
-        if (authProvider.getId()!= null){
-            geoProvider.removeLocationMoto(authProvider.getId())
-        }
-        easyWayLocation?.endUpdates()
-
-    }
-    private fun getDriver() {
-        driverProvider.getDriver(authProvider.getId()).addOnSuccessListener { document ->
+    private fun getClient() {
+        clientProvider.getClientById(authProvider.getId()).addOnSuccessListener { document ->
             if (document.exists()) {
-                val driver = document.toObject(Driver::class.java)
-                textViewUsername?.text = "${driver?.name} ${driver?.lastname}"
-            }
-        }
-    }
-
-    // VERIFICA SI ES CARRO O MOTO YO************************
-    private fun SaberSiesMoto(){
-        if (authProvider.getId()!= "") {
-            driverProvider.getDriver(authProvider.getId()).addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val driver = document.toObject(Driver::class.java)
-
-                    if (driver?.tipo.toString() == "Carro") {
-                        isMotoTrip = false
-                    }
-                    if (driver?.tipo.toString() == "Moto") {
-                        isMotoTrip = true
-                    }
-                }
+                val client = document.toObject(Client::class.java)
+                textViewUsername?.text = "${client?.name} ${client?.lastname}"
             }
         }
     }
@@ -151,7 +123,6 @@ class ModalBottomSheetMenu: BottomSheetDialogFragment() {
     companion object {
         const val TAG = "ModalBottomSheetMenu"
     }
-
 
 
 }

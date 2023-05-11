@@ -1,10 +1,7 @@
-package com.carlosvicente.uberdriverkotlin.api
+package com.carlosvicente.uberkotlin.api
 
-
-//import com.carlosvicente.uberdriverkotlin.models.FCMBody
-//import com.carlosvicente.uberdriverkotlin.models.FCMResponse
-import com.carlosvicente.uberdriverkotlin.models.FCMBody
-import com.carlosvicente.uberdriverkotlin.models.FCMResponse
+import com.carlosvicente.uberkotlin.models.FCMBody
+import com.carlosvicente.uberkotlin.models.FCMResponse
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.Headers

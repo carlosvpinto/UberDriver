@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.models
+package com.carlosvicente.uberkotlin.models
 
 import com.beust.klaxon.*
 import java.util.*
@@ -21,8 +21,7 @@ data class History (
     val destinationLng: Double? = null,
     val price: Double? = null,
     val timestamp: Long? = null,
-    val date: Date? = null,
-
+    val date: Date?= null,
 ) {
     public fun toJson() = klaxon.toJsonString(this)
 

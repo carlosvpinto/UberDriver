@@ -1,21 +1,18 @@
-package com.carlosvicente.uberdriverkotlin.providers
+package com.carlosvicente.uberkotlin.providers
 
-import android.net.Uri
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.carlosvicente.uberdriverkotlin.models.Booking
+import com.carlosvicente.uberkotlin.models.Booking
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FirebaseFirestore
 
 class BookingProvider {
 
     val db = Firebase.firestore.collection("Bookings")
     val authProvider = AuthProvider()
-    val tablaBookings = FirebaseFirestore.getInstance().collection("Bookings")
 
     fun create(booking: Booking): Task<Void> {
         return db.document(authProvider.getId()).set(booking).addOnFailureListener {
@@ -23,37 +20,35 @@ class BookingProvider {
         }
     }
 
-    fun getBooking(): Query {
-        Log.d("FIRESTORE", "VALOR DE AUTHPROVIDER: ${authProvider.getId()}")
-        return db.whereEqualTo("idDriver", authProvider.getId())
+
+    fun getBooking(): DocumentReference {
+        return db.document(authProvider.getId())
     }
-    fun getBookingINFO(): Query {
-        Log.d("FIRESTORE", "VALOR DE AUTHPROVIDER: ${authProvider.getId()}")
-        return db.whereEqualTo("idDriver", authProvider.getId()).whereEqualTo("status", "accept")
-    }
-    fun getBookingActivo(): Query {
-        Log.d("FIRESTORE", "VALOR DE AUTHPROVIDER: ${authProvider.getId()}")
-        return db.whereEqualTo("idDriver", authProvider.getId()).whereEqualTo("activo", true)
+    fun getBookingSnap(): Query {
+        return db.whereEqualTo("idDriver", authProvider.getId()).whereEqualTo("activo",true)
     }
 
-    //BORRA EL BOOKING ****YO*************
     fun remove(): Task<Void> {
         return db.document(authProvider.getId()).delete().addOnFailureListener { exception ->
             Log.d("FIRESTORE", "ERROR: ${exception.message}")
         }
     }
-
-
+    fun getBookingId(idDriver: String): Task<DocumentSnapshot> {
+        return db.document(idDriver).get().addOnFailureListener { exception ->
+            Log.d("FIREBASE", "ERROR: ${exception.toString()}")
+        }
+    }
     fun updateStatus(idClient: String, status: String): Task<Void> {
         return db.document(idClient).update("status", status,).addOnFailureListener { exception ->
             Log.d("FIRESTORE", "ERROR: ${exception.message}")
         }
     }
-    fun updateActivo(idClient: String, activo: Boolean): Task<Void> {
-        return db.document(idClient).update("activo", activo).addOnFailureListener { exception ->
+    fun updatePosicion(idClient: String, originLat: Double, originLng:Double): Task<Void> {
+        return db.document(idClient).update("originLat", originLat, "originLng",originLng).addOnFailureListener { exception ->
             Log.d("FIRESTORE", "ERROR: ${exception.message}")
         }
     }
+
 
 
 }

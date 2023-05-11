@@ -1,4 +1,4 @@
-package com.carlosvicente.uberdriverkotlin.providers
+package com.carlosvicente.uberkotlin.providers
 
 import android.util.Log
 import com.google.android.gms.tasks.Task
@@ -14,10 +14,7 @@ class ConfigProvider {
             Log.d("FIREBASE", "Error: ${exception.message}")
         }
     }
-    fun getPricesMoto(): Task<DocumentSnapshot> {
-        return db.document("prices").get().addOnFailureListener { exception ->
-            Log.d("FIREBASE", "Error: ${exception.message}")
-        }
-    }
+
+
 
 }
