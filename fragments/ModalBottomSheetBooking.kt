@@ -36,6 +36,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
     private lateinit var textViewOrigin: TextView
     private lateinit var textViewDestination: TextView
     private lateinit var textViewTimeAndDistance: TextView
+    private lateinit var textViewTipoPago: TextView
     private lateinit var btnAccept: Button
     private lateinit var btnCancel: Button
     private lateinit var txtTiempo: TextView
@@ -78,13 +79,14 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
         textViewOrigin = view.findViewById(R.id.textViewOrigin)
         textViewDestination = view.findViewById(R.id.textViewDestination)
         textViewTimeAndDistance = view.findViewById(R.id.textViewTimeAndDistance)
+        textViewTipoPago = view.findViewById(R.id.txtTipoPago)
 
 
         btnAccept = view.findViewById(R.id.btnAccept)
         btnCancel = view.findViewById(R.id.btnCancel)
 
 
-
+        //  RECIBE EL BOOKING DE LA ACTIVITY MAPACTIVITY
         val data = arguments?.getString("booking")
         booking = Booking.fromJson(data!!)!!
 
@@ -94,6 +96,7 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
         textViewOrigin.text = booking?.origin
         textViewDestination.text = booking?.destination
         textViewTimeAndDistance.text = "${String.format("%.1f", booking?.time)} Min - ${String.format("%.1f", booking?.km)} Km"
+        textViewTipoPago.text= booking?.tipoPago
 
 
 
@@ -230,10 +233,6 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
         }
     }
 
-    private fun apagarMusica() {
-        // Iniciar el servicio
-
-    }
 
     //CREA HISTORIA DE BOOKING CANCELADOS!!!!**************************
     private fun createHistoryCancel() {
@@ -262,6 +261,12 @@ class ModalBottomSheetBooking: BottomSheetDialogFragment() {
 
     private fun goToMapTrip() {
         val i = Intent(context, MapTripActivity::class.java)
+
+        val bundle = Bundle()
+        bundle.putString("booking", booking.toJson())
+        i.putExtras(bundle)
+        startActivity(i)
+
         i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         context?.startActivity(i)
     }

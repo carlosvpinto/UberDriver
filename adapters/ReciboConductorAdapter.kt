@@ -41,7 +41,7 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
         for (item in recibosConductores) {
             if (item.verificado!=true){
                 Log.d("COUNTAR", "ADENTRO ADETRO VERIFICADO FALSE: ")
-                totalSinVeriBs += item.montoBs!!.toDouble()
+              //  totalSinVeriBs += item.montoBs!!.toDouble()
                 totalSinVeriBsDollar +=item.montoDollar!!.toDouble()
             }
 
@@ -52,7 +52,7 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
             }
         }
         totalDollarUpdate = totalDollar
-        updateBilletera(authProvider.getId()!!)//llama a acuatlizar la billetera del cliente
+        updateBilletera(authProvider.getId())//llama a acuatlizar la billetera del cliente
 
 
         Log.d("COUNTAR", "pagoMoviles.size: ${recibosConductores.size} ")

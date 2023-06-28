@@ -27,6 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.TooltipCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -210,10 +211,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         binding.imageViewSalir.setOnClickListener{salirdelApp()}
         binding.switch1.setOnClickListener{startSensor()}
 
-
-
-
     }
+
+
 
 
     // Implementa el método onRequestPermissionsResult() para manejar la respuesta del usuario
@@ -232,13 +232,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             }
         }
     }
-
-    private fun llamaAlService() {
-        val intent = Intent(this, service::class.java)
-        startService(intent)
-
-    }
-
 
     val locationPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permission ->
 
@@ -293,7 +286,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
                 if (snapshot.documents.size > 0) {
                     while (Contador < CantBook){
 
-                        val booking = snapshot.documents[Contador].toObject(Booking::class.java)
+                        val  booking = snapshot.documents[Contador].toObject(Booking::class.java)
                         Contador++
                         if (booking?.status == "create"){
                             bookingbandera = booking
@@ -302,8 +295,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
                             //verica si esta activa la actividad
                            // musicaMediaPlayer()
                            // llamaAlService()
-
-
+                            //******************************
                             val fragmentTag = "ModalBottomSheet"
                             val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
                             if (existingFragment == null) {
@@ -313,6 +305,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
                             } else {
                                 // El fragmento ya existe, no se debe agregar nuevamente
                             }
+
+                            //*****************************************
 
                         }
 
@@ -393,8 +387,6 @@ fun musicaMediaPlayerStop(){
 
     }
 
-
-
     //MODIFICA LA DISPONIBILIDAD DEL CONDUCTOR
     private fun disponibilidadTrue(){
         if (authProvider.getId()!= ""){
@@ -418,12 +410,6 @@ fun musicaMediaPlayerStop(){
         }
     }
 
-
-
-
-
-
-
     //EJEMPLO DE GPT PARA EVIAR EL ERROR DE ABIERTO
     private fun showModalBooking(booking: Booking) {
         if (banderaActiva != true) {
@@ -445,28 +431,6 @@ fun musicaMediaPlayerStop(){
             // La actividad no está activa
         }
     }
-
-
-    //LLAMA EL FRAGMENT**********************************************************************
-//    private fun showModalBooking(booking: Booking) {
-//
-//    if (banderaActiva!= true) {
-//        val bundle = Bundle()
-//        bundle.putString("booking", booking.toJson())
-//        modalBooking.arguments = bundle
-//        modalBooking.isCancelable = false // NO PUEDA OCULTAR EL MODAL BOTTTOM SHEET
-//
-//        modalBooking.show(supportFragmentManager, ModalBottomSheetBooking.TAG)
-//
-//        //timer.start()
-//    } else {
-//        // La actividad no está activa
-//    }
-//
-//    }
-
-
-
 
     class RideRequestReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -538,6 +502,7 @@ fun musicaMediaPlayerStop(){
 
     //DESCONECTA LA MOTO O EL CARRO YO **********************************
     fun disconnectDriver() {
+
         easyWayLocation?.endUpdates()
         if (authProvider.getId()!= "") {
             disponibilidadFalse()
@@ -624,6 +589,7 @@ fun musicaMediaPlayerStop(){
     private fun showModalMenu() {
         modalMenu.show(supportFragmentManager, ModalBottomSheetMenu.TAG)
     }
+
     //MENSAGE DE CONFIRMACION DE SALIDA*********************
     fun salirdelApp(){
         val builder = AlertDialog.Builder(this)

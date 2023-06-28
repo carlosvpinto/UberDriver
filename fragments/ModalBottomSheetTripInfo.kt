@@ -32,6 +32,8 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
     val clientProvider = ClientProvider()
     val authProvider = AuthProvider()
     var textViewClientName: TextView? = null
+    var textViewTipoPago: TextView? = null
+    var textViewMontoPagoD: TextView? = null
     var textViewOrigin: TextView? = null
     var textViewDestination: TextView? = null
     var imageViewPhone: ImageView? = null
@@ -52,6 +54,8 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
         textViewClientName = view.findViewById(R.id.textViewClientName)
         textViewOrigin = view.findViewById(R.id.textViewOrigin)
         textViewDestination = view.findViewById(R.id.textViewDestination)
+        textViewTipoPago = view.findViewById(R.id.textViewTipoPago)
+        textViewMontoPagoD = view.findViewById(R.id.textViewMontoPagado)
         imageViewPhone = view.findViewById(R.id.imageViewPhone)
         circleImageClient = view.findViewById(R.id.circleImageClient)
         circleWhatsapp = view.findViewById(R.id.logowhatsapp)
@@ -59,12 +63,15 @@ class ModalBottomSheetTripInfo: BottomSheetDialogFragment() {
         progressDialog.showProgressBar(requireActivity())
 
 //        getDriver()
+        //RECIBO EL BOOKING****************
         val data = arguments?.getString("booking")
         booking = Booking.fromJson(data!!)!!
-        Log.d("CLIENTE", " VALOR DE BOOKING COMPLETO ${booking}")
+
 
         textViewOrigin?.text = booking.origin
         textViewDestination?.text = booking.destination
+        textViewTipoPago?.text = booking.tipoPago
+        textViewMontoPagoD?.text= booking.price.toString()
 
         circleWhatsapp?.setOnClickListener{
             if (client?.phone!= null){

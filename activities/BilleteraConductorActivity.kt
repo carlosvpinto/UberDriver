@@ -25,8 +25,7 @@ class BilleteraConductorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityBilleteraBinding
     private var reciboConductorProvider = ReciboCondutorlProvider()
-    private var histories = ArrayList<History>()
-    private lateinit var adapter:ReciboConductorAdapter
+    private  var adapter: ReciboConductorAdapter? = null
 
     private var progressDialog = ProgressDialogFragment
     private var reciboConductorListener: ListenerRegistration? = null

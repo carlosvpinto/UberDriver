@@ -25,10 +25,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.os.bundleOf
-import androidx.fragment.app.add
-import androidx.fragment.app.commit
-//import com.bumptech.glide.Glide
 import com.example.easywaylocation.EasyWayLocation
 import com.example.easywaylocation.Listener
 import com.example.easywaylocation.draw_path.DirectionUtil
@@ -43,9 +39,6 @@ import com.google.android.gms.maps.model.*
 import com.google.firebase.firestore.ListenerRegistration
 import com.carlosvicente.uberdriverkotlin.R
 import com.carlosvicente.uberdriverkotlin.databinding.ActivityMapTripBinding
-import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera
-import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera.Companion.ADDRESS_BUNDLE
-import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomCancelCarrera.Companion.NAME_BUNDLE
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetTripInfo
 //import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetTripInfo
@@ -56,12 +49,11 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.time.LocalTime
-//import retrofit2.Call
-//import retrofit2.Callback
-//import retrofit2.Response
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import android.content.Intent
+import android.net.Uri
 
 class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, DirectionUtil.DirectionCallBack, SensorEventListener {
 
@@ -74,6 +66,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private var originLatLng: LatLng? = null
     private var destinationLatLng: LatLng? = null
     private var booking: Booking? = null
+    private var bookingExtra: Booking? = null
     private var bookingInfo: Booking? = null
     private var bookingActivo: Booking? = null
     private var client: Client? = null
@@ -120,6 +113,9 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private var isFirstTimeOnResume = false
     private var isFirstLocation = false
     private var mapaCargado = false
+    private var bookingJson: String? = null
+
+
 
 
 
@@ -190,10 +186,19 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
         SaberSiesMoto()
 
+        //RECIBIR BOOKING DEL FRAGMENT****************
+        val bundle = intent.extras
+        if (bundle != null) {
+             bookingJson = bundle.getString("booking")
+            bookingExtra = Booking.fromJson(bookingJson!!)!!//LO LLEVO A FORMATO JSON
+            // Realiza el procesamiento necesario con los datos recibidos
+        }
+
+        //********************************************
+
             binding.btnStartTrip.setOnClickListener {
                 binding.btnStartTrip.isEnabled= false
                 updateToStarted() }
-
 
             binding.btnFinishTrip.setOnClickListener {
             ///evitar precionarlo varia veces
@@ -212,6 +217,14 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
                 binding.floatInfo.isClickable = false
                 binding.imageViewInfo.isClickable = false
                 showModalInfo2()}
+        binding.btnWaze.setOnClickListener {
+            if( binding.btnFinishTrip.visibility == View.GONE){
+                abrirWaze(originLatLng!!.latitude,originLatLng!!.longitude)
+            }
+            if ( binding.btnStartTrip.visibility == View.GONE){
+                abrirWaze(destinationLatLng!!.latitude,destinationLatLng!!.longitude)
+            }
+        }
 
         binding.switch1.setOnClickListener{startSensor()}
 
@@ -238,6 +251,20 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         }
 
     }
+    // Método para abrir Waze y mostrar una ubicación específica
+    fun abrirWaze(latitud: Double, longitud: Double) {
+        val uri = Uri.parse("geo:$latitud,$longitud?q=$latitud,$longitud(Waze)")
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+
+        // Verifica si hay alguna aplicación de navegación instalada en el dispositivo
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            // No hay ninguna aplicación de navegación instalada, muestra un mensaje de error
+            Toast.makeText(this, "No se encontró una aplicación de navegación", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
 
     //  OBTIENE LA INFORMACION DEL CLIENTE
@@ -361,7 +388,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             if (client != null) {
 
                 val bundle = Bundle()
-                bundle.putString("booking", booking?.toJson())
+                bundle.putString("booking", bookingExtra?.toJson())
                 binding.floatInfo.isClickable= true
                 binding.imageViewInfo.isClickable = true
                 if (supportFragmentManager.findFragmentByTag(ModalBottomSheetTripInfo.TAG) == null) {
@@ -578,13 +605,13 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
 /// CAMBIA ESTADO DEL BOOKING A STARTED ***********************
     private fun updateToStarted() {
-        //PARA ELI,INAR LA CERCANIA CON EL PASAJERO
+        //PARA ELIMINAR LA CERCANIA CON EL PASAJERO
         isCloseToOrigin= true
         //*****************************************************
         if (isCloseToOrigin) {
 
-            bookingProvider.updateStatus(bookingActivo?.idClient!!, "started").addOnCompleteListener {
-                Log.d("HISTORIA", "VALOR DE BOOKING.IDCLIENT y BOOKING.STATUS ${bookingActivo?.idClient}  ${booking?.status}  ")
+            bookingProvider.updateStatus(bookingExtra?.idClient!!, "started").addOnCompleteListener {
+                Log.d("HISTORIA", "VALOR DE BOOKING.IDCLIENT y BOOKING.STATUS ${bookingExtra?.idClient}  ${booking?.status}  ")
                 if (it.isSuccessful) {
                     if (destinationLatLng != null) {
                         isStartedTrip = true
@@ -623,8 +650,10 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             if (min == 0) {
                 min = 1
             }
-            getPrices(km, min.toDouble())
-            // cambiaEstado()
+            total = bookingExtra?.price!!
+            createHistory()
+           // getPrices(km, min.toDouble())
+             cambiaEstado()
 
 
 
@@ -634,18 +663,18 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         Log.d("HISTORIA", "HISTORIA booking viejo ${booking} BOOKING ACTIVO: ${bookingActivo} ")
         val history = History(
             idDriver = authProvider.getId(),
-            idClient = bookingActivo?.idClient,
-            origin = bookingActivo?.origin,
-            destination = bookingActivo?.destination,
-            originLat = bookingActivo?.originLat,
-            originLng = bookingActivo?.originLng,
-            destinationLat = bookingActivo?.destinationLat,
-            destinationLng = bookingActivo?.destinationLng,
+            idClient = bookingExtra?.idClient,
+            origin = bookingExtra?.origin,
+            destination = bookingExtra?.destination,
+            originLat = bookingExtra?.originLat,
+            originLng = bookingExtra?.originLng,
+            destinationLat = bookingExtra?.destinationLat,
+            destinationLng = bookingExtra?.destinationLng,
             time = min,
             km = km,
-            price = total,
+            price = bookingExtra?.price,
             timestamp = Date().time,
-            date = bookingActivo?.date
+            date = bookingExtra?.date
             
         )
         historyProvider.create(history).addOnCompleteListener {
@@ -663,14 +692,14 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
 
     private fun cambiaEstado(){
 
-        bookingProvider.updateStatus(bookingActivo?.idClient!!, "finished").addOnCompleteListener {
+        bookingProvider.updateStatus(bookingExtra?.idClient!!, "finished").addOnCompleteListener {
             if (it.isSuccessful) {
                 guardando = 0
                 sendNotification("Viaje terminado")
                 goToCalificationClient()// LLAMA AL ACTIVITY CALIFICACIONES
             }
         }
-        bookingProvider.updateActivo (bookingActivo?.idClient!!, false).addOnCompleteListener {
+        bookingProvider.updateActivo (bookingExtra?.idClient!!, false).addOnCompleteListener {
             if (it.isSuccessful) {
                 Log.d("PRICE", "CAMBIO EL ESTADO DE ACTIVO A FALSE")
             }
@@ -682,16 +711,19 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
     private fun getPrices(distance: Double, time: Double) {
         var CcortaMoto = 0.0
         var CmediaMoto = 0.0
+        var ClargaMoto = 0.0
         var CcortaCarro = 0.0
         var CmediaCarro = 0.0
+        var ClargaCarro = 0.0
         var kmCarro = 0.0
         var kmMoto = 0.0
-
+        progressDialog.showProgressBar(this)
         configProvider.getPrices().addOnSuccessListener { document ->
+            progressDialog.hideProgressBar(this)
             Log.d("PRICE", "VALOR DE Document $document ")
             //** verifica si es horario nocturno*************
             val horaActual = LocalTime.now()
-            val horaLimite1 = LocalTime.of(23, 0) // 11:00 PM
+            val horaLimite1 = LocalTime.of(22, 0) // 11:00 PM
             val horaLimite2 = LocalTime.of(6, 0) // 6:00 AM
 
             if (horaActual.isAfter(horaLimite1) || horaActual.isBefore(horaLimite2)) {
@@ -704,33 +736,43 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
             if (document.exists()) {
                 val prices = document.toObject(Prices::class.java) // DOCUMENTO CON LA INFORMACION
                 if (esNoturno){
-                     CcortaMoto = prices?.CcortaMoto!!.toDouble()*1.5
-                     CmediaMoto = prices?.CmediaMoto!!.toDouble()*1.5
-                     CcortaCarro = prices?.CcortaCarro!!.toDouble()*1.5
-                     CmediaCarro = prices?.CMediaCarro!!.toDouble()*1.5
-                     kmCarro = prices?.kmCarro!!.toDouble()*1.5
-                     kmMoto = prices?.kmMoto!!.toDouble()*1.5
+                    CcortaMoto = prices?.CcortaMoto!!.toDouble()*1.5
+                    CmediaMoto = prices?.CmediaMoto!!.toDouble()*1.5
+                    ClargaMoto = prices?.CLargaMoto!!.toDouble()*1.5
+                    CcortaCarro = prices?.CcortaCarro!!.toDouble()*1.5
+                    CmediaCarro = prices?.CMediaCarro!!.toDouble()*1.5
+                    ClargaCarro = prices?.CLargaCarro!!.toDouble()*1.5
+                    kmCarro = prices?.kmCarro!!.toDouble()*1.5
+                    kmMoto = prices?.kmMoto!!.toDouble()*1.5
+                }else{
+
                 }
                 if (!esNoturno){
-                     CcortaMoto = prices?.CcortaMoto!!.toDouble()
-                     CmediaMoto = prices?.CmediaMoto!!.toDouble()
-                     CcortaCarro = prices?.CcortaCarro!!.toDouble()
-                     CmediaCarro = prices?.CMediaCarro!!.toDouble()
-                     kmCarro = prices?.kmCarro!!.toDouble()
-                     kmMoto = prices?.kmMoto!!.toDouble()
+                    CcortaMoto = prices?.CcortaMoto!!.toDouble()
+                    CmediaMoto = prices?.CmediaMoto!!.toDouble()
+                    ClargaMoto = prices?.CLargaMoto!!.toDouble()
+                    CcortaCarro = prices?.CcortaCarro!!.toDouble()
+                    CmediaCarro = prices?.CMediaCarro!!.toDouble()
+                    ClargaCarro = prices?.CLargaCarro!!.toDouble()
+                    kmCarro = prices?.kmCarro!!.toDouble()
+                    kmMoto = prices?.kmMoto!!.toDouble()
                 }
 
 
                 if (tipoVehiculo == "Carro"){
 
-                    if (distance<5) {
+                    if (distance<3) {
                         total = CcortaCarro!!.toDouble()
                     }
-                    if (distance>5 && distance<12){
+                    if (distance>3 && distance<5){
                         total = CmediaCarro!!.toDouble()
                     }
-                    if (distance>12){ // FALTA CALCULAR BIEN DESPUES DE 12KM
-                        total = distance*kmCarro!!.toDouble()
+                    if (distance>5 && distance<7){
+
+                        total = ClargaCarro!!.toDouble()
+                    }
+                    if (distance>7){ // FALTA CALCULAR BIEN DESPUES DE 12KM
+                        total= ClargaCarro!!.toDouble()+ (distance-7)*kmCarro!!.toDouble()
                     }
                 }
 
@@ -809,7 +851,7 @@ class MapTripActivity : AppCompatActivity(), OnMapReadyCallback, Listener, Direc
         if (!isLocationEnabled) {
             isLocationEnabled = true
             getBooking()
-            getBookingActivo()
+            //getBookingActivo()
 
         }
 

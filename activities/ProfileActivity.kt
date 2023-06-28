@@ -148,6 +148,7 @@ class ProfileActivity : AppCompatActivity(),RadioGroup.OnCheckedChangeListener {
                 binding.textFieldCarBrand.setText(driver?.brandCar)
                 binding.textFieldCarColor.setText(driver?.colorCar)
                 binding.textFieldCarPlate.setText(driver?.plateNumber)
+                totalizaPagos()
                 if (driver?.tipo.toString() != "Carro"){
                     optmoto?.isChecked = true
                     Log.d("RADIO","MOTO")
