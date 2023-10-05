@@ -31,7 +31,7 @@ class CalificationClientActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         progressDialog.showProgressBar(this)
         extraPrice = intent.getDoubleExtra("price", 0.0)
-        binding.textViewPrice.text = "${String.format("%.1f", extraPrice)}$"
+        binding.textViewPrice.text = "${String.format("%.2f", extraPrice)}$"
 
         binding.ratingBar.setOnRatingBarChangeListener { ratingBar, value, b ->
             calification = value

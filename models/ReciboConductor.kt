@@ -14,8 +14,11 @@ data class ReciboConductor (
     val montoBs: Double? = null,
     val montoDollar: Double? = null,
     val fechaPago: String? = null,
+    val tipoPago: String? = null,
     val tazaCambiaria: Double? = null,
     val timestamp: Long? = null,
+    val destino: String?= null,
+    val origen: String?= null,
     val date: Date?= null,
     val verificado: Boolean? = false
 ) {

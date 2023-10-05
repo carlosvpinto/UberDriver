@@ -11,6 +11,8 @@ data class Client (
     val email: String? = null,
     val phone: String? = null,
     val image: String? = null,
+    var direcionFrecu1: String? = null,
+    var direcionFrecu2: String? = null,
     var token:String? = null,
 ) {
 

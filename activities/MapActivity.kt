@@ -23,6 +23,8 @@ import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,6 +32,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.TooltipCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import com.example.easywaylocation.EasyWayLocation
 import com.example.easywaylocation.Listener
@@ -45,6 +48,8 @@ import com.carlosvicente.uberdriverkotlin.R
 import com.carlosvicente.uberdriverkotlin.databinding.ActivityMapBinding
 import com.carlosvicente.uberdriverkotlin.fragments.FragmenRecibir
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking
+import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking.Companion.MONTO_BUNDLE
+import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetBooking.Companion.TAZA_BCV
 import com.carlosvicente.uberdriverkotlin.fragments.ModalBottomSheetMenu
 import com.carlosvicente.uberdriverkotlin.models.Booking
 import com.carlosvicente.uberdriverkotlin.models.Driver
@@ -52,7 +57,7 @@ import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 import com.carlosvicente.uberdriverkotlin.providers.*
 import com.carlosvicente.uberdriverkotlin.services.service
 //import com.carlosvicente.uberdriverkotlin.services.servicios
-import kotlinx.android.synthetic.main.modal_bottom_sheet_booking.*
+//import kotlinx.android.synthetic.main.modal_bottom_sheet_booking.*
 
 import java.util.*
 
@@ -62,6 +67,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 
     private var bearing: Float = 0.0f
     private var bookingListener: ListenerRegistration? = null
+    private var bookingListener2: ListenerRegistration? = null
+    private var bookingListener3: ListenerRegistration? = null
+    private var booking : Booking? = null
     private val bookingProvider = BookingProvider()
     private lateinit var binding: ActivityMapBinding
     private var googleMap: GoogleMap? = null
@@ -98,7 +106,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
     private var isFirstLocation = false
     private var extraBooking: Booking? = null
 
-
     //Moto
     val origin: String? = null
     private var isMotoTrip = true
@@ -108,7 +115,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 
     //PARA ELIMINAR SALIENDO
     var banderaActiva: Boolean = false
+    var solictudActiva: Boolean = false
     var bookingbandera: Booking? = null
+    var banderaFragmentBooking: Boolean = false
     var bookingReserva: Booking? = null
     private val historyCancelProvider = HistoryCancelProvider()
     var countDownTimerViaje : CountDownTimer? = null
@@ -183,6 +192,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 //        }
         //**************************************************
 
+
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager?
         vectSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
@@ -193,6 +203,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             Manifest.permission.ACCESS_COARSE_LOCATION
         ))
 
+        listenerBooking()
+        vericaBookingActivo() //VERRIFICA SI TIENE UN BOOKING ACTIVO
         SaberSiesMoto() // VERIFICA SI ES MOTO YO***********
         verificaActivacion()// REALIZA ACTIVACION DE LA APLICACION YO **************
 
@@ -224,9 +236,11 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
                 // Verifica si el permiso fue concedido por el usuario
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // Permiso concedido, puedes usar moveTaskToForeground() ahora
+                    Log.d("LOCALIZACION", "MapActivity Permiso de superposicion consedido")
                     Toast.makeText(this, "Permiso de superposicion consedido", Toast.LENGTH_SHORT).show()
                 } else {
                     // Permiso denegado, debes informar al usuario o cambiar la funcionalidad de tu aplicación
+                    Log.d("LOCALIZACION", "MapActivity Permiso de superposicion Noo consedido")
                     Toast.makeText(this, "Permiso de superposicion NOO consedido", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -238,17 +252,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             when {
                 permission.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
-                    Log.d("LOCALIZACION", "Permiso concedido")
+                    Log.d("LOCALIZACION", "MapActivity Permiso localizacion  concedido")
 //                    easyWayLocation?.startLocation();
                  //  checkIfDriverIsConnected()
                 }
                 permission.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {
-                    Log.d("LOCALIZACION", "Permiso concedido con limitacion")
+                    Log.d("LOCALIZACION", "MapActivity Permiso localizacion no concedido con limitacion")
 //                    easyWayLocation?.startLocation();
                    // checkIfDriverIsConnected()
                 }
                 else -> {
-                    Log.d("LOCALIZACION", "Permiso no concedido")
+                    Log.d("LOCALIZACION", "MapActivity  Permiso localizacion no concedido")
                 }
             }
         }
@@ -270,15 +284,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         }.start()
     }
 
-
     // ESCUCHA EL BOOKING SI EL ESTADO ES CREATE******************************************************
     fun listenerBooking() {
-        bookingListener = bookingProvider.getBooking().addSnapshotListener { snapshot, e ->
+        Log.d("llamandoFragment", "entro al listenerBooking1: banderaFragmentBooking $banderaFragmentBooking")
+        bookingListener = bookingProvider.getBooking1().addSnapshotListener { snapshot, e ->
             if (e != null) {
-                Log.d("FIRESTORE", "ERROR: ${e.message}")
                 return@addSnapshotListener
             }
-            Log.d("ESCUCHANDO", "ERROR: ${snapshot?.documents?.size}")
+
+            Log.d("llamandoFragment", "snapshot $snapshot snapshot.documents.size ${snapshot?.documents?.size}")
+            // bookingListener?.remove()
+            listenerBooking2()
             if (snapshot != null) {
                 var CantBook = 0
                 CantBook = snapshot.documents.size
@@ -286,23 +302,24 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
                 if (snapshot.documents.size > 0) {
                     while (Contador < CantBook){
 
-                        val  booking = snapshot.documents[Contador].toObject(Booking::class.java)
+                          booking = snapshot.documents[Contador].toObject(Booking::class.java)
                         Contador++
                         if (booking?.status == "create"){
                             bookingbandera = booking
                             bookingReserva = booking
+                            solictudActiva= true
 
-                            //verica si esta activa la actividad
-                           // musicaMediaPlayer()
-                           // llamaAlService()
                             //******************************
                             val fragmentTag = "ModalBottomSheet"
                             val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
-                            if (existingFragment == null) {
+                            Log.d("llamandoFragment", "listenerBooking: existingFragment $existingFragment")
+                            if (existingFragment == null && !banderaFragmentBooking) {
                                 // El fragmento no existe, se puede agregar
+                                banderaFragmentBooking = true
 
-                                showModalBooking(booking!!)
+                                llamarFragmenBooking(booking!!)
                             } else {
+
                                 // El fragmento ya existe, no se debe agregar nuevamente
                             }
 
@@ -310,12 +327,126 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
 
                         }
 
+
                     }
 
                 }
             }
+        }
+
+
+    }
+
+    // ESCUCHA EL BOOKING SI EL ESTADO ES CREATE******************************************************
+    fun listenerBooking2() {
+        Log.d("llamandoFragment", "entro al listenerBooking2: banderaFragmentBooking $banderaFragmentBooking ")
+        if ( !banderaFragmentBooking ){
+
+            bookingListener2 = bookingProvider.getBooking2().addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    return@addSnapshotListener
+                }
+
+                Log.d("llamandoFragment", "snapshot2 $snapshot snapshot.documents.size ${snapshot?.documents?.size}")
+
+                listenerBooking3()
+                if (snapshot != null) {
+
+                    if (snapshot.documents.size > 0) {
+                        booking = snapshot.documents[0].toObject(Booking::class.java)
+                        Log.d("llamandoFragment", "snapshot2 $snapshot snapshot.documents.size ${snapshot?.documents?.size} booking $booking")
+                        if (booking?.status == "create") {
+                            //******************************
+                            val fragmentTag = "ModalBottomSheet"
+                            val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
+                            Log.d("llamandoFragment", "listenerBooking: existingFragment $existingFragment")
+                            bookingReserva = booking
+                            if (existingFragment == null) {
+                                banderaFragmentBooking= true
+                                llamarFragmenBooking(booking!!)
+                                solictudActiva = true
+                            }
+                        }
+                    }
+                }
+            }
+
 
         }
+
+    }
+    // ESCUCHA EL BOOKING SI EL ESTADO ES CREATE******************************************************
+    fun listenerBooking3() {
+        Log.d("llamandoFragment", "entro al listenerBooking3 banderaFragmentBooking $banderaFragmentBooking ")
+        if (!banderaFragmentBooking){
+
+            bookingListener3 = bookingProvider.getBooking3().addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    return@addSnapshotListener
+                }
+                Log.d("llamandoFragment", "snapshot3 $snapshot snapshot.documents.size ${snapshot?.documents?.size}")
+                if (snapshot != null) {
+
+                    if (snapshot.documents.size > 0) {
+                        booking = snapshot.documents[0].toObject(Booking::class.java)
+                        if (booking?.status == "create") {
+                            bookingListener3?.remove()
+                            banderaFragmentBooking= true
+                            llamarFragmenBooking(booking!!)
+                        }
+
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    // VERIFICA SI EL CONDUCTOR TIENE ALGUN BOOKING ACTIVO****************************
+    private fun vericaBookingActivo() {
+        bookingProvider.getBookingAsignando().get()
+            .addOnSuccessListener { snapshot ->
+                Log.d("vericaBookingActivo", " snapshot $snapshot snapshot.documents.size ${snapshot.size()}")
+                var CantBook = 0
+                CantBook = snapshot.size()
+                var Contador = 0
+                if (snapshot.size() > 0) {
+                    while (Contador < CantBook) {
+                        booking = snapshot.documents[Contador].toObject(Booking::class.java)
+                        Log.d("vericaBookingActivo", " vericaBookingActivo booking?.status ${booking?.status}")
+                        Contador++
+                        if (booking?.status == "accept") {
+                            goToMapTrip("accept")
+                        }
+                        if (booking?.status == "started") {
+                            val destinationLatLng = LatLng(booking?.destinationLat!!, booking?.destinationLng!!)
+                            goToMapTrip("started")
+                            if (destinationLatLng != null && myLocationLatLng != null) {
+                                // Realizar alguna acción adicional aquí si es necesario
+                            }
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("vericaBookingActivo", "Error al obtener datos: $e")
+                // Manejar errores aquí si es necesario
+            }
+    }
+
+    private fun goToMapTrip(verificarStatus: String) {
+
+        val i = Intent(this, MapTripActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString("booking", booking?.toJson())
+        Log.d("bookingExtra", " SALIENDO DE MAPACTIVITY:bundle $bundle")
+        i.putExtras(bundle)
+        i.putExtra("verificarStatus",verificarStatus)
+        startActivity(i)
+
+        i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
     }
 
 
@@ -327,13 +458,10 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
             musicaMediaPlayerStop()
             bookingbandera=null
             createHistoryCancel()//CREA HISTORIA DE BOOKING CANCELADOS*******************
-
         }
     }
     //CREA HISTORIA DE BOOKING CANCELADOS!!!!**************************
     private fun createHistoryCancel() {
-
-        Log.d("PRICE", "VALOR DE TOTAL  ")
         val historyCancel = HistoryDriverCancel(
             idDriver = authProvider.getId(),
             idClient = bookingReserva?.idClient,
@@ -347,8 +475,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, Listener, SensorEve
         )
         historyCancelProvider.create(historyCancel).addOnCompleteListener {
             if (it.isSuccessful) {
-
-                Log.d("HISTOCANCEL", "LA HISTORIA DE CANCEL $historyCancel ")
 
             }
         }
@@ -410,42 +536,55 @@ fun musicaMediaPlayerStop(){
         }
     }
 
-    //EJEMPLO DE GPT PARA EVIAR EL ERROR DE ABIERTO
     private fun showModalBooking(booking: Booking) {
         if (banderaActiva != true) {
-            val fragment = supportFragmentManager.findFragmentByTag(ModalBottomSheetBooking.TAG)
-            if (fragment != null) {
-                // El fragmento ya está agregado, lo mostramos
-                if (!fragment.isVisible) {
-                    supportFragmentManager.beginTransaction().show(fragment).commit()
+            val fragmentTag = "ModalBottomSheet"
+            val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
+
+            if (existingFragment == null) {
+                val fragment = supportFragmentManager.findFragmentByTag(ModalBottomSheetBooking.TAG)
+
+                if (fragment == null) {
+                    // El fragmento no está agregado, lo agregamos y mostramos
+                    val bundle = Bundle()
+                    bundle.putString("booking", booking.toJson())
+                    modalBooking.arguments = bundle
+                    modalBooking.isCancelable = false // NO PUEDE OCULTAR EL MODAL BOTTOM SHEET
+                    modalBooking.show(supportFragmentManager, ModalBottomSheetBooking.TAG)
                 }
-            } else {
-                // El fragmento no está agregado, lo agregamos y mostramos
+            }
+        }
+    }
+    //PARA LLAMAR AL FRAGMNET DEL PAGO MOVIL
+    private fun llamarFragmenBooking(booking: Booking) {
+
+            Log.d("ESCUCHANDO", "ENTRO AL llamarFragmenBooking")
+            val fragmentTag = "ModalBottomSheet"
+            val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
+
+            if (existingFragment == null) {
                 val bundle = Bundle()
                 bundle.putString("booking", booking.toJson())
-                modalBooking.arguments = bundle
-                modalBooking.isCancelable = false // NO PUEDA OCULTAR EL MODAL BOTTTOM SHEET
-                modalBooking.show(supportFragmentManager, ModalBottomSheetBooking.TAG)
+
+                val fragment = ModalBottomSheetBooking()
+                fragment.arguments = bundle
+                fragment.isCancelable = false
+
+                // Esperar a que la actividad haya pasado por onResume()
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment, fragmentTag)
+                    .commitAllowingStateLoss()
             }
-        } else {
-            // La actividad no está activa
-        }
     }
 
-    class RideRequestReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val rideRequestIntent = Intent(context, MapActivity::class.java)
-            rideRequestIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(rideRequestIntent)
-        }
-    }
+//    class RideRequestReceiver : BroadcastReceiver() {
+//        override fun onReceive(context: Context, intent: Intent) {
+//            val rideRequestIntent = Intent(context, MapActivity::class.java)
+//            rideRequestIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//            context.startActivity(rideRequestIntent)
+//        }
+//    }
 
-    //LLAMA AL ACTIVITID DE NAVEGACION goToMapTrip ***YO******
-    private fun goToMapTrip() {
-        val i = Intent(this, MapTripActivity::class.java)
-        i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(i)
-    }
 
     //VERIFICA SI EL CONDUCTOR ESTA CONECTADO
     private fun checkIfDriverIsConnected() {
@@ -562,21 +701,13 @@ fun musicaMediaPlayerStop(){
                     val driver = document.toObject(Driver::class.java)
                     autorizadoCondu = driver?.activado!!
                     disponibleDriver = driver?.disponible!!
-                    Log.d("LOCALIZACION",
-                        "Private Saber si es moto: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
 
                     if (driver?.tipo.toString() == "Carro") {
                         isMotoTrip = false
-                        Log.d("LOCALIZACION",
-                            "ENTRO A CARRO: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
                     }
                     if (driver?.tipo.toString() == "Moto") {
                         isMotoTrip = true
-                        Log.d("LOCALIZACION",
-                            "ENTRO A MOTO: autorizadoCondu  $autorizadoCondu  ${driver.tipo}")
                     }
-
-
                 }
             }
         }
@@ -672,10 +803,7 @@ fun musicaMediaPlayerStop(){
 
     override fun currentLocation(location: Location) { // ACTUALIZACION DE LA POSICION EN TIEMPO REAL
         if( binding.btnConnect.visibility == View.GONE){
-            Log.d("conexion", "entro sl if gone:")
             myLocationLatLng = LatLng(location.latitude, location.longitude) // LAT Y LONG DE LA POSICION ACTUAL
-
-
             val field = GeomagneticField(
                 location.latitude.toFloat(),
                 location.longitude.toFloat(),
@@ -801,42 +929,17 @@ fun musicaMediaPlayerStop(){
     }
     override fun onStart() {
         super.onStart()
-        listenerBooking()
+       // listenerBooking()
         var extraBooking: Booking? = null
         val extraOriginName = intent.getStringExtra("booking")
         Log.d("EXTRABOOKING", "onStar en activity Antes del if: bundle $extraOriginName")
         val bundle = intent.extras
-
-        if(extraOriginName!=null) {
-            val booking = Booking.fromJson(extraOriginName!!)
-            Log.d("EXTRABOOKING", "onStar en activity dentro del extraOriginName $booking")
-            showModalBooking(booking!!)
-        }
-
-
     }
 
     override fun onResume() {
         super.onResume() // ABRIMOS LA PANTALLA ACTUAL
 
             banderaActiva= false
-        Log.d("EXTRABOOKING", "onResume:banderaActiva $banderaActiva  extraBooking $extraBooking")
-        if (extraBooking!= null){
-            // verifica que no se alla llamado el fragmen******************************
-            val fragmentTag = "ModalBottomSheet"
-            val existingFragment = supportFragmentManager.findFragmentByTag(fragmentTag)
-            if (existingFragment == null) {
-                // El fragmento no existe, se puede agregar
-
-                showModalBooking(bookingbandera!!)
-                bookingbandera= null//limpia el booking coreccion2
-            } else {
-                // El fragmento ya existe, no se debe agregar nuevamente
-            }//***********************************************************************
-
-           // showModalBooking(bookingbandera!!)
-            bookingbandera= null// limpia el booking
-        }
 
         if (!isFirstTimeOnResume) {
             isFirstTimeOnResume = true
@@ -848,23 +951,19 @@ fun musicaMediaPlayerStop(){
 
     override fun onPause() {
         super.onPause()
-        //Toast.makeText(this, "OnPause", Toast.LENGTH_SHORT).show()
-
             banderaActiva= true
-
-
         stopSensor()
     }
 
 
     override fun onStop() {
         super.onStop()
-        //Toast.makeText(this, "OnStop", Toast.LENGTH_SHORT).show()
-        // La actividad ya no es visible (ahora est� "detenida")
     }
     override fun onDestroy() { // CIERRA APLICACION O PASAMOS A OTRA ACTIVITY
         salirEliminando()
-
+        bookingListener?.remove()
+        bookingListener2?.remove()
+        bookingListener3?.remove()
         super.onDestroy()
     }
 
@@ -890,11 +989,8 @@ fun musicaMediaPlayerStop(){
         stopSensor()
     }
     override fun onBackPressed() {
-        salirdelApp()
         // Aquí puedes colocar el código para manejar la acción del botón "Atrás"
-        // Por ejemplo, puedes finalizar la actividad actual:
-        //salirdelViaje()
+        salirdelApp()
     }
-
 
 }

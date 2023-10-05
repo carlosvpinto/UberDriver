@@ -41,7 +41,7 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
         for (item in recibosConductores) {
             if (item.verificado!=true){
                 Log.d("COUNTAR", "ADENTRO ADETRO VERIFICADO FALSE: ")
-              //  totalSinVeriBs += item.montoBs!!.toDouble()
+                totalSinVeriBs+=item.montoBs!!.toDouble()
                 totalSinVeriBsDollar +=item.montoDollar!!.toDouble()
             }
 
@@ -58,8 +58,10 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
         Log.d("COUNTAR", "pagoMoviles.size: ${recibosConductores.size} ")
         val textView = context.findViewById<TextView>(R.id.txttotaldolares)
         val textViewSinVeri = context.findViewById<TextView>(R.id.txttotalSinveri)
-        textViewSinVeri.text= totalSinVeriBsDollar.toString()// coloca el monto de los dolares sin verificar
-        textView.text = totalDollar.toString()//coloca el monto de los dolares Verificados
+        val totalDolarSinVeri2d = String.format("%.2f", totalSinVeriBsDollar)
+        val totalDolarVeri2d = String.format("%.2f", totalDollar)
+        textViewSinVeri.text= totalDolarSinVeri2d.toString()// coloca el monto de los dolares sin verificar
+        textView.text = totalDolarVeri2d.toString()//coloca el monto de los dolares Verificados
 
         itemCount = recibosConductores.size
     }
@@ -78,6 +80,8 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
         val montoDollar = pagoMovil.montoDollar.toString().toDouble()
         holder.textViewMontoDollar.text = pagoMovil.montoDollar.toString()
         holder.textViewNroRecibo.text = pagoMovil.nro.toString()
+        holder.textViewTipoPago.text= pagoMovil.tipoPago
+        holder.textViewDestino.text= pagoMovil.destino
         if (pagoMovil.verificado!= null){
             holder.checkVerificacion.isChecked= pagoMovil.verificado!!
         }
@@ -114,7 +118,9 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
         val textViewMontoBs: TextView
         val textViewMontoDollar: TextView
         val textViewNroRecibo: TextView
+        val textViewTipoPago: TextView
         val textViewtimestamp: TextView
+        val textViewDestino: TextView
         val cardView: CardView // Nueva referencia a la CardView
         val checkVerificacion: CheckBox
 
@@ -124,6 +130,9 @@ class ReciboConductorAdapter(val context: Activity, var recibosConductores: Arra
             textViewMontoDollar = view.findViewById(R.id.textViewMontoDollar)
             textViewNroRecibo = view.findViewById(R.id.textViewNroRecibo)
             textViewtimestamp = view.findViewById(R.id.textViewTimestamp)
+            textViewDestino = view.findViewById(R.id.textViewDestino)
+            textViewTipoPago = view.findViewById(R.id.textViewTipoPago)
+
             cardView = view.findViewById(R.id.cardView) // Inicializar la referencia a la CardView
             checkVerificacion= view.findViewById(R.id.checkboxVerificacion)
 

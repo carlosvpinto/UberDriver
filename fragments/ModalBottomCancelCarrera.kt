@@ -14,7 +14,7 @@ import com.carlosvicente.uberdriverkotlin.models.HistoryDriverCancel
 import com.carlosvicente.uberdriverkotlin.providers.AuthProvider
 import com.carlosvicente.uberdriverkotlin.providers.BookingProvider
 import com.carlosvicente.uberdriverkotlin.providers.HistoryCancelProvider
-import kotlinx.android.synthetic.main.fragment_modal_bottom_cancel_carrera.*
+//import kotlinx.android.synthetic.main.fragment_modal_bottom_cancel_carrera.*
 import java.util.*
 import kotlin.math.log
 
@@ -49,9 +49,9 @@ class ModalBottomCancelCarrera : Fragment() {
         val data = arguments?.getString("booking")
         booking = Booking.fromJson(data!!)!!
 
-        btnCancelarComenzado.setOnClickListener{cancelBooking(booking?.idClient!!)
-
-        }
+//        btnCancelarComenzado.setOnClickListener{cancelBooking(booking?.idClient!!)
+//
+//        }
     }
 
     companion object {
